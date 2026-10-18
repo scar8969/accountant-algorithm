@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<style>
+  :root { --bg:#0a0e14; --panel:#101721; --line:#1d2735; --text:#d7e0ec;
+          --muted:#7f90a5; --accent:#7cc4ff; --warn:#f0b45a; --good:#6ee7a8; --bad:#ff8b8b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  header { padding:26px 32px 18px; border-bottom:1px solid var(--line);
+           display:flex; gap:18px; align-items:baseline; flex-wrap:wrap; }
+  h1 { font-size:18px; margin:0; font-weight:600; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted);
+       margin:0 0 12px; font-weight:600; }
+  .sub, .foot { color:var(--muted); font-size:12px; }
+  main { padding:24px 32px 64px; max-width:1100px; }
+  a { color:var(--accent); text-decoration:none; }
+  .warn { border:1px solid #6a4a17; background:#1d1608; color:var(--warn);
+          padding:11px 14px; border-radius:8px; margin-bottom:20px; font-size:12.5px; }
+  form { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+         padding:16px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;
+         margin-bottom:22px; }
+  label { display:flex; flex-direction:column; gap:6px; font-size:11px;
+          text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+  select { background:#0d131b; color:var(--text); border:1px solid var(--line);
+           border-radius:6px; padding:8px 10px; min-width:180px; font:inherit; }
+  button { background:#17324a; color:var(--accent); border:1px solid #26506f;
+           border-radius:6px; padding:9px 16px; font:inherit; cursor:pointer; }
+  button:hover { background:#1d3d59; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+            padding:20px 22px; margin-bottom:20px; }
+  .score { font-size:42px; font-weight:600; letter-spacing:-.02em; }
+  .score small { font-size:13px; color:var(--muted); font-weight:400; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:baseline; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:6px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+       font-weight:500; }
+  .bar { height:9px; background:#18222f; border-radius:5px; overflow:hidden; margin-top:5px; }
+  .bar > span { display:block; height:100%; background:#4d8fbf; }
+  .dim { margin-bottom:12px; }
+  .ok { color:var(--good); } .no { color:var(--bad); }
+  code { color:var(--accent); }
+  ul { margin:6px 0 0 18px; padding:0; } li { font-size:12.5px; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Compatibility explorer</h1>
+  <span class="sub">synthetic profiles · seed {{ seed }} · {{ embed }}</span>
+  <a href="/" style="margin-left:auto">← results</a>
+</header>
+<main>
+  <div class="warn">Explanations show each feature's contribution on a fixed 0-100 scale.
+    The score is not a probability of a relationship, and the questionnaire is an
+    experimental feature inventory, not a validated personality test.</div>
+
+  <form method="get" action="/compare">
+    <label>profile A
+      <select name="a">{% for p in profiles %}
+        <option value="{{ p.participant_id }}" {% if p.participant_id == a %}selected{% endif %}>
+          {{ p.participant_id }} · {{ p.goal or 'no goal' }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>profile B
+      <select name="b">{% for p in profiles %}
+        <option value="{{ p.participant_id }}" {% if p.participant_id == b %}selected{% endif %}>
+          {{ p.participant_id }} · {{ p.goal or 'no goal' }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit">compare</button>
+  </form>
+
+  {% if result %}
+  <section>
+    <div class="row">
+      <div>
+        <div class="score">{% if result.score is not none %}{{ '%.1f'|format(result.score) }}
+          <small>/ 100</small>{% else %}insufficient data{% endif %}</div>
+        <div class="foot">weighted coverage {{ '%.0f'|format(result.coverage * 100) }}% ·
+          gates: A→B {% if result.gate_a %}<span class="no">{{ result.gate_a|join(', ') }}</span>{% else %}<span class="ok">none</span>{% endif %} ·
+          B→A {% if result.gate_b %}<span class="no">{{ result.gate_b|join(', ') }}</span>{% else %}<span class="ok">none</span>{% endif %}</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Per-dimension scores</h2>
+    {% for name, value in result.dimensions.items() %}
+      <div class="dim">
+        <div>{{ name }} <span class="foot">{{ '%.3f'|format(value) }}</span></div>
+        <div class="bar"><span style="width: {{ (value * 100)|round(1) }}%"></span></div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h2>Feature contributions (points on the 0-100 scale)</h2>
+    <table>
+      <thead><tr><th>feature</th><th>similarity</th><th>weight</th><th>points</th></tr></thead>
+      <tbody>
+      {% for c in result.explanation.contributions %}
+        <tr><td>{{ c.feature }} <span class="ok">↑</span></td>
+          <td>{{ '%.2f'|format(c.similarity) }}</td>
+          <td>{{ '%.1f'|format(c.weight_pct) }}%</td>
+          <td>{{ '%+.2f'|format(c.points) }}</td></tr>
+      {% endfor %}
+      {% for c in result.explanation.conflicts %}
+        <tr><td>{{ c.feature }} <span class="no">↓</span></td>
+          <td>{{ '%.2f'|format(c.similarity) }}</td>
+          <td>{{ '%.1f'|format(c.weight_pct) }}%</td>
+          <td>{{ '%+.2f'|format(c.points) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="foot">Missing features (excluded, not imputed):
+      {{ result.explanation.missing|join(', ') if result.explanation.missing else 'none' }}</p>
+  </section>
+
+  <section>
+    <h2>Limitations attached to this score</h2>
+    <ul>{% for item in result.limitations %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+  {% elif a and b %}
+    <section><p>Could not score this pair — same profile selected, or the pair is not in
+      the synthetic dataset.</p></section>
+  {% endif %}
+</main>
+</body>
+</html>

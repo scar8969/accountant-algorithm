@@ -1,0 +1,233 @@
+{
+  "seeds": [
+    20261018,
+    20261019,
+    20261020,
+    20261021,
+    20261022
+  ],
+  "per_seed": [
+    {
+      "seed": 20261018,
+      "mutual": {
+        "random": 0.2623,
+        "structured": 0.2935,
+        "text": 0.2291,
+        "structured_text": 0.306,
+        "mutual_independence": 0.2955,
+        "mutual_logistic": 0.3748,
+        "mutual_gbm": 0.2416
+      },
+      "directional": {
+        "random": 0.4109,
+        "structured": 0.4851,
+        "text": 0.485,
+        "structured_text": 0.4773,
+        "directional_logistic": 0.4983
+      },
+      "best_mutual": "mutual_logistic",
+      "best_directional": "directional_logistic",
+      "mutual_positives": 316
+    },
+    {
+      "seed": 20261019,
+      "mutual": {
+        "random": 0.2074,
+        "structured": 0.3865,
+        "text": 0.2693,
+        "structured_text": 0.3699,
+        "mutual_independence": 0.2438,
+        "mutual_logistic": 0.2854,
+        "mutual_gbm": 0.5129
+      },
+      "directional": {
+        "random": 0.3393,
+        "structured": 0.486,
+        "text": 0.389,
+        "structured_text": 0.4884,
+        "directional_logistic": 0.4641
+      },
+      "best_mutual": "mutual_gbm",
+      "best_directional": "structured_text",
+      "mutual_positives": 284
+    },
+    {
+      "seed": 20261020,
+      "mutual": {
+        "random": 0.2014,
+        "structured": 0.2111,
+        "text": 0.2625,
+        "structured_text": 0.208,
+        "mutual_independence": 0.3276,
+        "mutual_logistic": 0.4466,
+        "mutual_gbm": 0.3678
+      },
+      "directional": {
+        "random": 0.4926,
+        "structured": 0.4461,
+        "text": 0.4509,
+        "structured_text": 0.4484,
+        "directional_logistic": 0.4997
+      },
+      "best_mutual": "mutual_logistic",
+      "best_directional": "directional_logistic",
+      "mutual_positives": 284
+    },
+    {
+      "seed": 20261021,
+      "mutual": {
+        "random": 0.2652,
+        "structured": 0.5029,
+        "text": 0.3201,
+        "structured_text": 0.5154,
+        "mutual_independence": 0.2831,
+        "mutual_logistic": 0.2932,
+        "mutual_gbm": 0.3131
+      },
+      "directional": {
+        "random": 0.3941,
+        "structured": 0.4881,
+        "text": 0.4747,
+        "structured_text": 0.4921,
+        "directional_logistic": 0.4556
+      },
+      "best_mutual": "structured_text",
+      "best_directional": "structured_text",
+      "mutual_positives": 309
+    },
+    {
+      "seed": 20261022,
+      "mutual": {
+        "random": 0.062,
+        "structured": 0.0476,
+        "text": 0.2,
+        "structured_text": 0.05,
+        "mutual_independence": 0.1111,
+        "mutual_logistic": 0.0506,
+        "mutual_gbm": 0.1964
+      },
+      "directional": {
+        "random": 0.322,
+        "structured": 0.329,
+        "text": 0.2821,
+        "structured_text": 0.3344,
+        "directional_logistic": 0.2773
+      },
+      "best_mutual": "text",
+      "best_directional": "structured_text",
+      "mutual_positives": 268
+    }
+  ],
+  "mutual": [
+    {
+      "model": "mutual_gbm",
+      "n_seeds": 5,
+      "mean": 0.3264,
+      "sd": 0.1233,
+      "min": 0.1964,
+      "max": 0.5129,
+      "wins": 1
+    },
+    {
+      "model": "mutual_logistic",
+      "n_seeds": 5,
+      "mean": 0.2901,
+      "sd": 0.1492,
+      "min": 0.0506,
+      "max": 0.4466,
+      "wins": 2
+    },
+    {
+      "model": "structured_text",
+      "n_seeds": 5,
+      "mean": 0.2899,
+      "sd": 0.1745,
+      "min": 0.05,
+      "max": 0.5154,
+      "wins": 1
+    },
+    {
+      "model": "structured",
+      "n_seeds": 5,
+      "mean": 0.2883,
+      "sd": 0.1729,
+      "min": 0.0476,
+      "max": 0.5029,
+      "wins": 0
+    },
+    {
+      "model": "text",
+      "n_seeds": 5,
+      "mean": 0.2562,
+      "sd": 0.0452,
+      "min": 0.2,
+      "max": 0.3201,
+      "wins": 1
+    },
+    {
+      "model": "mutual_independence",
+      "n_seeds": 5,
+      "mean": 0.2522,
+      "sd": 0.0844,
+      "min": 0.1111,
+      "max": 0.3276,
+      "wins": 0
+    },
+    {
+      "model": "random",
+      "n_seeds": 5,
+      "mean": 0.1997,
+      "sd": 0.0825,
+      "min": 0.062,
+      "max": 0.2652,
+      "wins": 0
+    }
+  ],
+  "directional": [
+    {
+      "model": "structured_text",
+      "n_seeds": 5,
+      "mean": 0.4481,
+      "sd": 0.0658,
+      "min": 0.3344,
+      "max": 0.4921,
+      "wins": 3
+    },
+    {
+      "model": "structured",
+      "n_seeds": 5,
+      "mean": 0.4469,
+      "sd": 0.0682,
+      "min": 0.329,
+      "max": 0.4881,
+      "wins": 0
+    },
+    {
+      "model": "directional_logistic",
+      "n_seeds": 5,
+      "mean": 0.439,
+      "sd": 0.0925,
+      "min": 0.2773,
+      "max": 0.4997,
+      "wins": 2
+    },
+    {
+      "model": "text",
+      "n_seeds": 5,
+      "mean": 0.4163,
+      "sd": 0.0838,
+      "min": 0.2821,
+      "max": 0.485,
+      "wins": 0
+    },
+    {
+      "model": "random",
+      "n_seeds": 5,
+      "mean": 0.3918,
+      "sd": 0.0674,
+      "min": 0.322,
+      "max": 0.4926,
+      "wins": 0
+    }
+  ]
+}

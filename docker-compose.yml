@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: accountant
+      POSTGRES_PASSWORD: accountant
+      POSTGRES_DB: accountant
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U accountant -d accountant"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      ACCOUNTANT_DB_URL: postgresql+psycopg://accountant:accountant@db:5432/accountant
+      ACCOUNTANT_ENV: production
+      ACCOUNTANT_API_KEY: ${ACCOUNTANT_API_KEY:?set ACCOUNTANT_API_KEY in .env}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

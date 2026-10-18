@@ -1,0 +1,42 @@
+name: h1_structured_vs_baselines
+hypothesis: >
+  H1: a structured compatibility model ranks mutually interested pairs more
+  effectively than random ranking and a text-similarity baseline on held-out
+  participants.
+
+  Secondary: H2 adding text embeddings improves ranking beyond structured
+  features alone; H4 model confidence tracks observed outcome frequencies.
+primary_metric: pr_auc
+
+seed: 20261018
+
+synthetic:
+  n_profiles: 100
+  exposure_k: 18
+  missing_rate: 0.10
+
+protocol:
+  test_frac: 0.30
+  k: 5
+  bootstrap_iters: 500
+  bins: 10
+  temporal_train_frac: 0.70
+
+models:
+  directional:
+    - random
+    - structured
+    - text
+    - structured_text
+    - directional_logistic
+  mutual:
+    - random
+    - structured
+    - text
+    - structured_text
+    - mutual_independence
+    - mutual_logistic
+    - mutual_gbm
+  interaction:
+    - interaction_mean
+    - interaction_ridge
