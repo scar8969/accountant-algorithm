@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No benchmark artifact — Accountant Algorithm</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark">AA</span> Accountant Algorithm
+    <span class="brand-sub">research platform</span></div>
+  <nav><a href="/docs">API</a></nav>
+  <span class="badge badge-warn">no results yet</span>
+</header>
+<main class="shell">
+  <section class="hero">
+    <div class="eyebrow">Setup</div>
+    <h1>Run the first experiment</h1>
+    <p class="lede">The dashboard renders <code>{{ results_path }}</code>, which does not exist
+      yet. Generate it with the checked-in configuration, then reload this page.</p>
+    <div class="chips">
+      <span class="chip">profiles <b>100 synthetic</b></span>
+      <span class="chip">baselines <b>7</b></span>
+      <span class="chip">split <b>participant-grouped</b></span>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><span class="num">01</span><h2>Commands</h2></div>
+    <pre style="background:#0a1119;border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto"><code style="border:0;background:none;padding:0">python -m alembic upgrade head
+python scripts/run_benchmark.py --config configs/experiments/h1_structured_vs_baselines.yaml
+python scripts/sweep_seeds.py --seeds 5
+python scripts/make_report.py</code></pre>
+    <p class="small muted mt">The API is already running:
+      <a href="/docs">OpenAPI documentation</a> ·
+      <a href="/api/v1/health">health check</a>.</p>
+  </section>
+</main>
+</body>
+</html>

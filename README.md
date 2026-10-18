@@ -1,5 +1,10 @@
 # The Accountant Algorithm
 
+![tests](https://img.shields.io/badge/tests-90%20passing-2f6f4f?style=flat-square)
+![python](https://img.shields.io/badge/python-3.11%2B-31506f?style=flat-square)
+![license](https://img.shields.io/badge/license-MIT-31506f?style=flat-square)
+![status](https://img.shields.io/badge/status-research%20prototype-6b4f17?style=flat-square)
+
 A research platform for one question: **can a structured compatibility model rank
 promising matches better than simple baselines — and can it separate profile
 attraction from interpersonal compatibility?**
@@ -44,7 +49,7 @@ python -m uvicorn backend.api.main:app --port 8775
 #    http://127.0.0.1:8775/docs       OpenAPI
 
 # 5. tests
-python -m pytest -q                        # 87 tests: unit, integration, leakage
+python -m pytest -q                            # 90 tests: unit, integration, leakage
 ```
 
 Larger sample (same hypothesis, 300 synthetic profiles, tighter intervals):
@@ -126,6 +131,22 @@ synthetic pairs would not fix it, only consented participants would.
 
 ---
 
+## Interface
+
+The dashboard is a server-rendered research report: held-out metrics with intervals,
+calibration, seed stability and feature-level failure cases. No JS build step, no CDN.
+
+![Experiment dashboard](docs/dashboard.png)
+
+The compatibility explorer decomposes a single pair into weighted feature contributions,
+hard constraints, missing answers and a weight-sensitivity band.
+
+![Compatibility explorer](docs/explorer.png)
+
+Full-page capture: [`docs/dashboard-full.png`](docs/dashboard-full.png).
+
+---
+
 ## Architecture
 
 Modular monolith, one process, no queue, no vector database, no microservices.
@@ -149,6 +170,8 @@ configs/        h1_structured_vs_baselines.yaml, h1_power_300.yaml
 scripts/        run_benchmark.py, sweep_seeds.py, make_report.py, seed_demo.py
 .github/        ci.yml (tests, migration on a fresh DB, benchmark smoke run)
 ```
+
+![System map](docs/architecture.svg)
 
 ### Deviations from the blueprint (deliberate, documented)
 

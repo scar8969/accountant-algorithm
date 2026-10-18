@@ -17,6 +17,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from ..db.session import init_db
@@ -73,6 +74,9 @@ def _metric_rows(task_block: dict, best: str | None) -> list[dict]:
             "ndcg": r.get("ndcg@5"),
             "recall": r.get("recall@5"),
             "coverage": r.get("coverage"),
+            "n": m.get("n"),
+            "positives": m.get("positives"),
+            "prevalence": m.get("prevalence"),
             "highlight": name == best,
         })
     rows.sort(key=lambda row: -(row["pr_auc"] if row["pr_auc"] is not None else -1))
@@ -123,10 +127,29 @@ def build_view(results: dict) -> dict:
         for task in ("directional", "mutual")
     }
 
+    mutual_meta = {"n": None, "positives": None, "prevalence": None}
+    if view_rows := _metric_rows(mutual, best_mutual):
+        mutual_meta = {"n": view_rows[0]["n"], "positives": view_rows[0]["positives"],
+                       "prevalence": view_rows[0]["prevalence"]}
+
+    headline = ""
+    if best_mutual and comparison["mutual"].get("best_value") is not None:
+        comp = comparison["mutual"]
+        delta = comp.get("delta_vs_random")
+        width = comp.get("ci_width")
+        headline = (
+            f"{best_mutual} ranks mutually interested pairs at PR-AUC "
+            f"{comp['best_value']:.3f}"
+            + (f", {delta:+.3f} over random ranking" if delta is not None else "")
+            + (f", with a 95% interval {width:.2f} wide — wider than most of the "
+               f"gaps between models." if width is not None else "."))
+
     return {
         "experiment": exp,
         "dataset": data,
         "protocol": protocol,
+        "mutual_meta": mutual_meta,
+        "headline": headline,
         "simulation": results.get("simulation", {}),
         "mutual_rows": _metric_rows(mutual, best_mutual),
         "directional_rows": _metric_rows(directional, best_directional),
@@ -141,7 +164,8 @@ def build_view(results: dict) -> dict:
         "temporal": {"comparison": temporal_comparison,
                      "dataset": temporal.get("dataset", {}),
                      "leakage": temporal.get("leakage", {}),
-                     "train_frac": temporal.get("train_frac")},
+                     "train_frac": temporal.get("train_frac"),
+                     "ordering_verified": temporal.get("ordering_verified", False)},
         "interaction": results.get("results", {}).get("interaction", {}),
         "power_note": results.get("power_note"),
         "sweep": sweep,
@@ -165,7 +189,9 @@ def _demo_profiles() -> tuple[list[dict], dict]:
 
 def create_app() -> FastAPI:
     init_db()
-    app = FastAPI(title="Accountant Algorithm — research platform", version="0.1.0")
+    app = FastAPI(title="Accountant Algorithm — research platform", version="0.2.0")
+    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")),
+              name="static")
     app.include_router(router, prefix="/api/v1")
 
     @app.middleware("http")
@@ -189,12 +215,12 @@ def create_app() -> FastAPI:
     def dashboard(request: Request):
         results = _load_results()
         if results is None:
-            return TEMPLATES.TemplateResponse(request, "empty.html", {
-                "title": "Accountant Algorithm",
+            return TEMPLATES.TemplateResponse(request, "notfound.html", {
+                "title": "No benchmark artifact",
                 "results_path": str(_results_path()),
             })
-        return TEMPLATES.TemplateResponse(request, "dashboard.html",
-                                          {"title": "Accountant Algorithm — results",
+        return TEMPLATES.TemplateResponse(request, "report.html",
+                                          {"title": "Experiment report",
                                            "view": build_view(results)})
 
     @app.get("/compare", response_class=HTMLResponse)
@@ -213,7 +239,7 @@ def create_app() -> FastAPI:
                       "gate_a": ps.gate_a, "gate_b": ps.gate_b,
                       "limitations": ps.limitations,
                       "explanation": explanation(ps)}
-        return TEMPLATES.TemplateResponse(request, "compare.html", {
+        return TEMPLATES.TemplateResponse(request, "explorer.html", {
             "title": "Compatibility explorer",
             "profiles": profiles, "a": a, "b": b, "result": result,
             "seed": cfg["seed"], "synthetic": True,

@@ -293,6 +293,33 @@ def test_failed_run_is_persisted(client, research_headers):
     assert runs[0]["status"] in {"failed", "running", "queued"}
 
 
+def test_dashboard_renders_benchmark_report(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.text
+    assert "Primary result" in body
+    assert "Seed stability" in body
+    assert "/static/site.css" in body
+    assert "Synthetic data" in body
+
+
+def test_explorer_renders_pair_inspection(client):
+    response = client.get("/compare?a=p0001&b=p0003")
+    assert response.status_code == 200
+    body = response.text
+    assert "Feature contributions" in body
+    assert "Hard constraints" in body
+    assert "site.css" in body
+
+
+def test_dashboard_without_artifact_shows_setup_page(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("ACCOUNTANT_RESULTS", str(tmp_path / "missing.json"))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Run the first experiment" in response.text
+    assert "run_benchmark.py" in response.text
+
+
 def test_health_reports_database(client):
     body = client.get("/api/v1/health").json()
     assert body["status"] == "ok"

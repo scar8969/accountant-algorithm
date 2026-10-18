@@ -1,0 +1,377 @@
+{% macro f(v, d=3) -%}
+{%- if v is none -%}–{%- elif d == 1 -%}{{ '%.1f'|format(v) }}{%- elif d == 2 -%}{{ '%.2f'|format(v) }}{%- else -%}{{ '%.3f'|format(v) }}{%- endif -%}
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ view.experiment.name }} — Accountant Algorithm</title>
+<meta name="description" content="Reproducible compatibility-model benchmark: held-out ranking metrics, calibration and seed-stability checks.">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark">AA</span> Accountant Algorithm
+    <span class="brand-sub">research platform</span></div>
+  <nav>
+    <a href="#result">Result</a>
+    <a href="#models">Models</a>
+    <a href="#diagnostics">Diagnostics</a>
+    <a href="#stability">Stability</a>
+    <a href="#methods">Methods</a>
+    <a href="/compare">Explorer</a>
+    <a href="/docs">API</a>
+  </nav>
+  <span class="badge badge-warn">synthetic data</span>
+</header>
+
+<main class="shell">
+
+  <section class="hero">
+    <div class="eyebrow">Experiment report · {{ view.generated[:10] }}</div>
+    <h1>{{ view.experiment.name }}</h1>
+    <p class="lede">{{ view.headline or view.experiment.hypothesis }}</p>
+    <div class="chips">
+      <span class="chip">seed <b>{{ view.experiment.seed }}</b></span>
+      <span class="chip">schema <b>{{ view.experiment.feature_schema_version }}</b></span>
+      <span class="chip">simulation <b>{{ view.experiment.simulation_version }}</b></span>
+      <span class="chip">config <b>{{ view.experiment.config_hash }}</b></span>
+      <span class="chip">code <b>{{ view.experiment.code_revision }}</b></span>
+      <span class="chip">dataset <b>{{ view.dataset.version }}</b></span>
+    </div>
+  </section>
+
+  <div class="callout">
+    <strong>Synthetic data.</strong> Outcomes were produced by the documented simulator
+    (v{{ view.experiment.simulation_version }}) in <code>backend/experiments/simulation.py</code>.
+    Beating a baseline here shows the pipeline works; it is not evidence about human
+    attraction. Reported interest is a self-report proxy, and no score is a psychological
+    assessment.
+  </div>
+
+  <section class="stats">
+    <div class="stat"><div class="k">profiles</div>
+      <div class="v">{{ view.dataset.n_profiles }}</div>
+      <div class="s">synthetic participants</div></div>
+    <div class="stat"><div class="k">candidate pairs</div>
+      <div class="v">{{ view.dataset.n_pairs }}</div>
+      <div class="s">{{ view.dataset.unknown_interest_directions }} directions unknown</div></div>
+    <div class="stat"><div class="k">mutual test rows</div>
+      <div class="v">{{ view.mutual_meta.n if view.mutual_meta.n is not none else '–' }}</div>
+      <div class="s">{{ view.mutual_meta.positives if view.mutual_meta.positives is not none else '–' }}
+        positive · {{ f(view.mutual_meta.prevalence, 2) }} prevalence</div></div>
+    <div class="stat"><div class="k">best PR-AUC</div>
+      <div class="v">{{ f(view.comparison.mutual.best_value) }}</div>
+      <div class="s">{{ view.comparison.mutual.best_model or 'no model' }}</div></div>
+    <div class="stat"><div class="k">95% interval width</div>
+      <div class="v warn">{{ f(view.comparison.mutual.ci_width, 2) }}</div>
+      <div class="s">cluster bootstrap over people</div></div>
+    <div class="stat"><div class="k">leakage check</div>
+      {% if view.protocol.leakage.disjoint_participants and view.protocol.leakage.disjoint_pairs %}
+        <div class="v good">clean</div>
+        <div class="s">0 shared people · 0 shared pairs</div>
+      {% else %}
+        <div class="v warn">LEAK</div>
+        <div class="s">{{ view.protocol.leakage.shared_participants|length }} shared people</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- 01 ---------------------------------------------------------------- -->
+  <section class="panel" id="result">
+    <div class="panel-head"><span class="num">01</span><h2>Primary result — mutual interest</h2>
+      <span class="hint">{{ view.protocol.primary }} · {{ view.dataset.n_mutual_observations }}
+        mutual observations</span></div>
+
+    <div class="split">
+      <div class="chart">
+        {{ view.mutual_chart|safe }}
+        <p class="caption">Bars: PR-AUC on held-out pairs. Whiskers: 95% interval from a
+          cluster bootstrap over participants. Positive prevalence
+          {{ f(view.mutual_meta.prevalence, 2) }} — read PR-AUC against that baseline, not 0.5.</p>
+      </div>
+      <aside class="notes">
+        <h3>How to read this</h3>
+        <ul>
+          <li>Models are compared on identical held-out pairs from participants never seen
+            in training.</li>
+          <li>Δ vs random: {{ '%+.3f'|format(view.comparison.mutual.delta_vs_random) if view.comparison.mutual.delta_vs_random is not none else '–' }};
+            Δ vs structured: {{ '%+.3f'|format(view.comparison.mutual.delta_vs_structured) if view.comparison.mutual.delta_vs_structured is not none else '–' }}.</li>
+          <li>Intervals overlap heavily. Ordering is suggestive; it is not a ranking of
+            algorithms.</li>
+        </ul>
+        {% if view.power_note %}
+          <p class="small muted mt">{{ view.power_note.statement }}</p>
+        {% endif %}
+      </aside>
+    </div>
+
+    <div class="table-wrap mt">
+      <table class="data">
+        <thead><tr><th>model</th><th>PR-AUC</th><th>95% CI</th><th>ROC-AUC</th>
+          <th>log loss</th><th>ECE</th><th>NDCG@5</th><th>Recall@5</th>
+          <th>coverage</th><th>n</th></tr></thead>
+        <tbody>
+        {% for row in view.mutual_rows %}
+          <tr class="{% if row.highlight %}best{% endif %}">
+            <td>{{ row.model }}</td>
+            <td>{{ f(row.pr_auc) }}</td>
+            <td class="dim">{{ row.ci }}</td>
+            <td>{{ f(row.roc_auc) }}</td>
+            <td>{{ f(row.log_loss) }}</td>
+            <td>{{ f(row.ece) }}</td>
+            <td>{{ f(row.ndcg) }}</td>
+            <td>{{ f(row.recall) }}</td>
+            <td>{{ f(row.coverage, 2) }}</td>
+            <td class="dim">{{ row.n if row.n is not none else '–' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 02 ---------------------------------------------------------------- -->
+  <section class="panel" id="models">
+    <div class="panel-head"><span class="num">02</span><h2>Directional interest (A → B)</h2>
+      <span class="hint">{{ view.dataset.n_directional_observations }} directional observations</span></div>
+    <div class="split">
+      <div class="chart">
+        {{ view.directional_chart|safe }}
+        <p class="caption">Same participants, both directions. The text-only baseline is a
+          lexical hashing encoder, not a semantic model.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>model</th><th>PR-AUC</th><th>ROC-AUC</th><th>NDCG@5</th>
+            <th>coverage</th></tr></thead>
+          <tbody>
+          {% for row in view.directional_rows %}
+            <tr class="{% if row.highlight %}best{% endif %}">
+              <td>{{ row.model }}</td>
+              <td>{{ f(row.pr_auc) }}</td>
+              <td>{{ f(row.roc_auc) }}</td>
+              <td>{{ f(row.ndcg) }}</td>
+              <td>{{ f(row.coverage, 2) }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 ---------------------------------------------------------------- -->
+  <section class="panel" id="diagnostics">
+    <div class="panel-head"><span class="num">03</span><h2>Calibration and interaction quality</h2>
+      <span class="hint">probability models only</span></div>
+    <div class="split-even">
+      <div>
+        <h3 class="sub">Reliability — {{ view.calibration_name or 'n/a' }}</h3>
+        {% if view.calibration_chart %}
+          {{ view.calibration_chart|safe }}
+          <p class="caption">Points are held-out pairs binned by predicted probability;
+            bubble area follows bin count. Dashed line is perfect calibration.</p>
+        {% else %}
+          <p class="muted">No probabilistic model in this run.</p>
+        {% endif %}
+      </div>
+      <div>
+        <h3 class="sub">Task C — conversation quality</h3>
+        {% if view.interaction %}
+          <table class="data">
+            <thead><tr><th>model</th><th>MAE</th><th>RMSE</th><th>n</th></tr></thead>
+            <tbody>
+            {% for name, payload in view.interaction.items() %}
+              <tr><td>{{ name }}</td>
+                <td>{{ f(payload.metrics.mae, 2) }}</td>
+                <td>{{ f(payload.metrics.rmse, 2) }}</td>
+                <td class="dim">{{ payload.metrics.n }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <p class="caption">Quality labels exist only where both sides reported interest,
+            so this comparison is underpowered. A mean baseline scoring as well as the
+            feature model is the expected result at this sample size.</p>
+        {% else %}
+          <p class="muted">No interaction observations.</p>
+        {% endif %}
+
+        <h3 class="sub">Temporal protocol</h3>
+        <p class="caption" style="margin-top:0">
+          Train on the first {{ (view.temporal.train_frac * 100)|round|int }}% of pairs by
+          timestamp; participants may reappear by design. Ordering verified:
+          {{ 'yes' if view.temporal.ordering_verified else 'unknown' }}.
+        </p>
+        {% for task, rows in view.temporal.comparison.items() %}
+          {% if rows %}
+            <table class="data" style="margin-top:10px">
+              <thead><tr><th>{{ task }}</th><th>PR-AUC</th><th>ROC-AUC</th></tr></thead>
+              <tbody>
+              {% for row in rows[:4] %}
+                <tr><td>{{ row.model }}</td><td>{{ f(row.pr_auc) }}</td>
+                  <td>{{ f(row.roc_auc) }}</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 ---------------------------------------------------------------- -->
+  {% if view.sweep %}
+  <section class="panel" id="stability">
+    <div class="panel-head"><span class="num">04</span><h2>Seed stability</h2>
+      <span class="hint">{{ view.sweep.seeds|length }} seeds · identical configuration</span></div>
+    <p class="small muted" style="margin-top:-4px">
+      Same config, different seed and split.
+      {% if view.sweep_winners|length > 1 %}
+        The single-seed winner changed every time ({{ view.sweep_winners|join(', ') }}), so
+        differences between models are smaller than seed-to-seed variance. This sample cannot
+        rank them.
+      {% else %}
+        The winner was stable across these seeds.
+      {% endif %}
+    </p>
+    <div class="split">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>model</th><th>mean PR-AUC</th><th>sd</th><th>min</th><th>max</th>
+            <th>seeds won</th></tr></thead>
+          <tbody>
+          {% for row in view.sweep.mutual %}
+            <tr><td>{{ row.model }}</td>
+              <td>{{ f(row.mean) }}</td><td class="dim">{{ f(row.sd) }}</td>
+              <td>{{ f(row.min) }}</td><td>{{ f(row.max) }}</td>
+              <td class="dim">{{ row.wins }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <aside class="notes">
+        <h3>Per-seed winners</h3>
+        <ul>
+          {% for run in view.sweep.per_seed %}
+            <li>seed {{ run.seed }} → {{ run.best_mutual or '–' }}
+              <span class="muted">({{ run.mutual_positives }} positives)</span></li>
+          {% endfor %}
+        </ul>
+        <p class="small muted mt">Regenerate with
+          <code>python scripts/sweep_seeds.py --seeds 5</code>.</p>
+      </aside>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- 05 ---------------------------------------------------------------- -->
+  <section class="panel">
+    <div class="panel-head"><span class="num">05</span><h2>Protocol and integrity</h2>
+      <span class="hint">what the evaluation guarantees</span></div>
+    <div class="split-even">
+      <div>
+        <div class="kv">
+          <div>split<b>{{ view.protocol.primary }}</b></div>
+          <div>test fraction<b>{{ f(view.protocol.test_frac, 2) }}</b></div>
+          <div>train pairs<b>{{ view.protocol.leakage.train_pairs }}</b></div>
+          <div>test pairs<b>{{ view.protocol.leakage.test_pairs }}</b></div>
+          <div>dropped straddling pairs<b>{{ view.protocol.dropped_straddling_pairs }}</b></div>
+          <div>shared participants<b>{{ view.protocol.leakage.shared_participants|length }}</b></div>
+          <div>bootstrap iterations<b>{{ view.protocol.bootstrap_iters }}</b></div>
+          <div>feature schema<b>{{ view.experiment.feature_schema_version }}</b></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <h3>Guarantees enforced in code</h3>
+        <ul>
+          <li>Participant-grouped split; pairs straddling folds are dropped, never split.</li>
+          <li>Features never read labels or post-interaction feedback.</li>
+          <li>Unshown or unanswered directions are unknown, never negative.</li>
+          <li>Mutual interest requires both sides; one row per pair.</li>
+          <li>Every prediction records model and feature-schema versions.</li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 06 ---------------------------------------------------------------- -->
+  <section class="panel">
+    <div class="panel-head"><span class="num">06</span><h2>Failure cases — structured score</h2>
+      <span class="hint">feature-level explanations</span></div>
+    <p class="small muted" style="margin-top:-4px">Scored by the interpretable baseline so each
+      case can be explained feature by feature, not by the run's best learned model.</p>
+    {% if view.failure_cases %}
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>pair</th><th>observed mutual</th><th>score</th><th>coverage</th>
+            <th>top positive</th><th>top conflict</th></tr></thead>
+          <tbody>
+          {% for c in view.failure_cases %}
+            <tr>
+              <td>{{ c.pair[0] }} ↔ {{ c.pair[1] }}</td>
+              <td><span class="tag {{ 'ok' if c.observed_mutual else 'bad' }}">
+                {{ c.observed_mutual }}</span></td>
+              <td>{{ f(c.structured_score, 1) }}</td>
+              <td class="dim">{{ f(c.coverage, 2) }}</td>
+              <td>{{ c.top_positive[0].feature if c.top_positive else '–' }}
+                <span class="dim">({{ '%+.1f'|format(c.top_positive[0].points) if c.top_positive else '' }})</span></td>
+              <td>{{ c.top_conflict[0].feature if c.top_conflict else '–' }}
+                <span class="dim">({{ '%+.1f'|format(c.top_conflict[0].points) if c.top_conflict else '' }})</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No failure cases recorded.</p>
+    {% endif %}
+  </section>
+
+  <!-- 07 ---------------------------------------------------------------- -->
+  <section class="panel" id="methods">
+    <div class="panel-head"><span class="num">07</span><h2>Methods and limitations</h2>
+      <span class="hint">read before citing a number</span></div>
+    <div class="split-even">
+      <div>
+        <h3 class="sub">Pre-registered hypothesis</h3>
+        <p class="small">{{ view.experiment.hypothesis }}</p>
+        <h3 class="sub">Primary metric</h3>
+        <p class="small">{{ view.experiment.primary_metric }}, held-out participants, 95%
+          cluster bootstrap over participants. Positive prevalence is reported alongside it;
+          multiple metrics are reported so no single one can be cherry-picked.</p>
+        <h3 class="sub">Score semantics</h3>
+        <p class="small">The 0-100 score is an experimental scale, not a probability. Each
+          score carries an evidence level and a weight-sensitivity band (±25% perturbation of
+          pre-registered weights, 200 deterministic draws) — sensitivity to the weights, not
+          sampling uncertainty.</p>
+      </div>
+      <div>
+        <h3 class="sub">Limitations</h3>
+        <ul class="plain">
+          {% for item in view.limitations %}<li>{{ item }}</li>{% endfor %}
+          <li>Exposure is affinity-weighted in the simulator; a real platform's exposure
+            policy would change prevalence and ranking metrics.</li>
+          <li>Synthetic profiles are not a substitute for participant diversity.</li>
+        </ul>
+        <h3 class="sub">Reproduce</h3>
+        <p class="small"><code>python scripts/run_benchmark.py --config
+          configs/experiments/{{ view.experiment.name }}.yaml</code></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Generated {{ view.generated }} · artifact
+      <span class="mono">{{ view.results_path }}</span></span>
+    <span class="mono">config {{ view.experiment.config_hash }} · seed
+      {{ view.experiment.seed }} · schema {{ view.experiment.feature_schema_version }}</span>
+    <span>Research prototype. Not a dating product, not a diagnostic tool.</span>
+  </footer>
+
+</main>
+</body>
+</html>

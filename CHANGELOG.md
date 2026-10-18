@@ -74,9 +74,10 @@ set of missing guards. Everything below is covered by a test.
   interval width into the difference the sample can actually resolve.
 * **Larger replication config** `h1_power_300.yaml` (300 profiles): interval width for
   mutual PR-AUC drops from 0.65 to 0.29, and the model ordering becomes readable.
-* **87 tests** (was 63), including a dedicated `tests/unit/test_robustness.py` and new
+* **90 tests** (was 63), including a dedicated `tests/unit/test_robustness.py`, new
   integration tests for consent versions, rate limits, schema guards, export contents,
-  seed handling and failed-run persistence.
+  seed handling and failed-run persistence, and render tests for the report, explorer
+  and the no-artifact setup page.
 * **GitHub Actions CI**: tests, migrations on a fresh database, benchmark smoke run.
 
 ### Changed numbers

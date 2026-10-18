@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 610" width="1200" height="610"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Accountant Algorithm system map</title>
+  <desc id="desc">Modular monolith: API, feature engine, model registry, experiment runner and
+    report dashboard, backed by PostgreSQL or SQLite, run artifacts and quality gates.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3d5a7a"/>
+    </marker>
+    <style>
+      .box { fill: #0d131b; stroke: #22303f; stroke-width: 1; rx: 10; }
+      .box-accent { stroke: #2f4a66; }
+      .t { font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+           font-size: 13.5px; font-weight: 600; fill: #e6edf6; }
+      .s { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+           font-size: 10.5px; fill: #8496ab; }
+      .n { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+           font-size: 9.5px; fill: #6ea8fe; letter-spacing: 0.12em; }
+      .cap { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+             font-size: 10px; fill: #5d6f85; }
+      .link { stroke: #3d5a7a; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+      .link-dash { stroke: #26384a; stroke-width: 1.2; fill: none; stroke-dasharray: 4 4;
+                   marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="609" rx="14" fill="#080c12" stroke="#1c2735"/>
+
+  <text x="44" y="42" class="t" style="font-size:15px">Accountant Algorithm — system map</text>
+  <text x="44" y="62" class="cap">modular monolith · one process · no queue, no vector database, no microservices</text>
+  <text x="1156" y="42" class="n" text-anchor="end">v0.2</text>
+
+  <!-- pipeline -->
+  <g>
+    <rect x="44" y="96" width="196" height="104" class="box box-accent"/>
+    <text x="58" y="118" class="n">01 · INTERFACE</text>
+    <text x="58" y="140" class="t">API v1</text>
+    <text x="58" y="160" class="s">FastAPI · participant tokens</text>
+    <text x="58" y="176" class="s">consent · rate limits</text>
+    <text x="58" y="192" class="s">schema validation</text>
+
+    <rect x="268" y="96" width="196" height="104" class="box"/>
+    <text x="282" y="118" class="n">02 · FEATURES</text>
+    <text x="282" y="140" class="t">Feature engine</text>
+    <text x="282" y="160" class="s">similarity + preference fit</text>
+    <text x="282" y="176" class="s">missing-data masks</text>
+    <text x="282" y="192" class="s">hard constraints, sensitivity</text>
+
+    <rect x="492" y="96" width="196" height="104" class="box"/>
+    <text x="506" y="118" class="n">03 · MODELS</text>
+    <text x="506" y="140" class="t">Model registry</text>
+    <text x="506" y="160" class="s">B0 random · B1 structured</text>
+    <text x="506" y="176" class="s">B2 text · B3/B4 learned</text>
+    <text x="506" y="192" class="s">tasks A · B · C</text>
+
+    <rect x="716" y="96" width="196" height="104" class="box"/>
+    <text x="730" y="118" class="n">04 · EVALUATION</text>
+    <text x="730" y="140" class="t">Experiment runner</text>
+    <text x="730" y="160" class="s">grouped + temporal splits</text>
+    <text x="730" y="176" class="s">leakage assertions</text>
+    <text x="730" y="192" class="s">PR-AUC · calibration · CIs</text>
+
+    <rect x="940" y="96" width="196" height="104" class="box box-accent"/>
+    <text x="954" y="118" class="n">05 · OUTPUT</text>
+    <text x="954" y="140" class="t">Report + dashboard</text>
+    <text x="954" y="160" class="s">inline SVG charts</text>
+    <text x="954" y="176" class="s">results.json · results.csv</text>
+    <text x="954" y="192" class="s">report.md · seed sweep</text>
+  </g>
+
+  <line x1="240" y1="148" x2="264" y2="148" class="link"/>
+  <line x1="464" y1="148" x2="488" y2="148" class="link"/>
+  <line x1="688" y1="148" x2="712" y2="148" class="link"/>
+  <line x1="912" y1="148" x2="936" y2="148" class="link"/>
+
+  <!-- persistence and gates -->
+  <g>
+    <rect x="44" y="272" width="340" height="132" class="box"/>
+    <text x="58" y="294" class="n">STORAGE</text>
+    <text x="58" y="316" class="t">PostgreSQL / SQLite</text>
+    <text x="58" y="336" class="s">participants · consent · profiles</text>
+    <text x="58" y="352" class="s">pair outcomes · predictions · runs</text>
+    <text x="58" y="368" class="s">Alembic migrations · pseudonymous ids</text>
+    <text x="58" y="390" class="cap">withdrawal scrubs profiles and deletes downstream rows</text>
+
+    <rect x="412" y="272" width="340" height="132" class="box"/>
+    <text x="426" y="294" class="n">ARTIFACTS</text>
+    <text x="426" y="316" class="t">Reproducible run outputs</text>
+    <text x="426" y="336" class="s">results.json · results.csv</text>
+    <text x="426" y="352" class="s">sweep.json · report.md</text>
+    <text x="426" y="368" class="s">config hash · seed · code revision</text>
+    <text x="426" y="390" class="cap">committed so every number has a provenance trail</text>
+
+    <rect x="780" y="272" width="356" height="132" class="box"/>
+    <text x="794" y="294" class="n">QUALITY GATES</text>
+    <text x="794" y="316" class="t">Tests and CI</text>
+    <text x="794" y="336" class="s">87 tests: unit · integration · leakage</text>
+    <text x="794" y="352" class="s">config validation · schema guards</text>
+    <text x="794" y="368" class="s">CI: migrations on a fresh DB, smoke run</text>
+    <text x="794" y="390" class="cap">a leaking split fails the run, not the review</text>
+  </g>
+
+  <!-- links from runner down -->
+  <path d="M 814 200 L 814 236 L 184 236 L 184 268" class="link"/>
+  <path d="M 814 200 L 814 236 L 582 236 L 582 268" class="link"/>
+  <path d="M 814 200 L 814 236 L 958 236 L 958 268" class="link-dash"/>
+
+  <!-- legend -->
+  <g>
+    <line x1="44" y1="470" x2="82" y2="470" class="link"/>
+    <text x="92" y="474" class="cap">inference path</text>
+    <line x1="200" y1="470" x2="238" y2="470" class="link-dash"/>
+    <text x="248" y="474" class="cap">verification path</text>
+    <text x="1156" y="474" class="cap" text-anchor="end">one process · zero external services for the MVP</text>
+  </g>
+
+  <text x="44" y="540" class="cap">Synthetic data by default. Real evidence requires consented participants; the
+    reports state which is which.</text>
+  <text x="44" y="566" class="cap">Research prototype — not a dating product and not a diagnostic tool.</text>
+</svg>
