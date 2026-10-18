@@ -14,12 +14,19 @@ Deal-breakers are applied as hard directional gates, before ranking.
 
 from __future__ import annotations
 
+import hashlib
 import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+import numpy as np
+
 from . import schema as S
 from .embeddings import cosine
+
+# Allowed keys inside a stated preference. Unknown keys are rejected so a typo
+# ("wieght") cannot silently fall back to the default weight.
+PREF_KEYS = {"range", "weight", "hard"}
 
 
 # --------------------------------------------------------------------------- #
@@ -88,6 +95,12 @@ def validate_profile(profile: dict) -> list[str]:
         w = (pref or {}).get("weight", 3)
         if not isinstance(w, (int, float)) or not (1 <= w <= 5):
             errors.append(f"preference {name} weight must be in [1, 5]")
+        unknown = set((pref or {})) - PREF_KEYS
+        if unknown:
+            errors.append(f"preference {name} has unknown keys: {sorted(unknown)}")
+        hard = (pref or {}).get("hard", False)
+        if not isinstance(hard, bool):
+            errors.append(f"preference {name} hard must be boolean")
 
     goal = profile.get("goal")
     if goal is not None and goal not in S.GOALS:
@@ -168,6 +181,8 @@ class PairScore:
     eligible_b: bool = True
     confidence_a: float = 0.0
     confidence_b: float = 0.0
+    evidence: str = "low"                  # low | medium | high
+    uncertainty: dict = field(default_factory=dict)
     limitations: list[str] = field(default_factory=list)
 
     @property
@@ -176,8 +191,67 @@ class PairScore:
 
 
 def _dealbreakers_hit(owner: dict, other: dict) -> list[str]:
+    """Hard constraints owned by `owner` that `other` violates.
+
+    Two kinds: named lifestyle flags and preferences marked `"hard": true`
+    whose acceptable range the other person falls outside.
+    """
     other_flags = other.get("flags") or {}
-    return [db for db in (owner.get("dealbreakers") or []) if other_flags.get(db) is True]
+    hits = [db for db in (owner.get("dealbreakers") or []) if other_flags.get(db) is True]
+
+    other_traits = other.get("traits") or {}
+    for name, pref in (owner.get("preferences") or {}).items():
+        if not (pref or {}).get("hard"):
+            continue
+        rng = (pref or {}).get("range")
+        value = other_traits.get(name)
+        if not rng or value is None:
+            continue
+        if not (float(rng[0]) <= float(value) <= float(rng[1])):
+            hits.append(f"{name}:hard_range")
+    return hits
+
+
+def evidence_level(coverage: float, confidence_a: float, confidence_b: float) -> str:
+    """How much answered data supports this score. Not a probability."""
+    floor = min(confidence_a, confidence_b)
+    if coverage >= 0.95 and floor >= 0.85:
+        return "high"
+    if coverage >= 0.75 and floor >= 0.60:
+        return "medium"
+    return "low"
+
+
+def _sensitivity_band(leaves: dict[str, dict], ps_score: float,
+                      seed_key: str, sigma: float = 0.25,
+                      draws: int = 200) -> dict:
+    """Score range under multiplicative perturbation of the leaf weights.
+
+    This is a *sensitivity* band: how much the number moves if the pre-registered
+    weights are somewhat wrong. It is not a confidence interval for an outcome and
+    says nothing about sampling error.
+    """
+    present = [(v["w"], v["s"]) for v in leaves.values() if v["s"] is not None]
+    if not present or ps_score is None:
+        return {}
+    w = np.array([p[0] for p in present], dtype=float)
+    s = np.array([p[1] for p in present], dtype=float)
+    digest = hashlib.blake2b(seed_key.encode(), digest_size=8).digest()
+    rng = np.random.default_rng(int.from_bytes(digest, "big") % (2 ** 32))
+    draws_out = np.empty(draws, dtype=float)
+    for i in range(draws):
+        mult = rng.lognormal(mean=0.0, sigma=sigma, size=len(w))
+        draws_out[i] = 100.0 * float((w * mult * s).sum() / (w * mult).sum())
+    return {
+        "method": "weight-perturbation",
+        "sigma": sigma,
+        "draws": draws,
+        "p05": round(float(np.percentile(draws_out, 5)), 2),
+        "p50": round(float(np.percentile(draws_out, 50)), 2),
+        "p95": round(float(np.percentile(draws_out, 95)), 2),
+        "note": ("Sensitivity to the pre-registered weights, not sampling "
+                 "uncertainty and not a probability of any outcome."),
+    }
 
 
 def score_pair(a: dict, b: dict, embed=None,
@@ -256,18 +330,30 @@ def score_pair(a: dict, b: dict, embed=None,
     if text_s is None:
         limitations.append("Text similarity not computed (no embeddings or no text).")
     if gate_a or gate_b:
-        limitations.append("A deal-breaker applies; the pair is ineligible for ranking "
-                           "in the gated direction.")
+        limitations.append("A hard constraint (deal-breaker or hard range) applies; the "
+                           "pair is ineligible for ranking in the gated direction.")
+
+    a_id = str(a.get("participant_id") or a.get("profile_id") or "")
+    b_id = str(b.get("participant_id") or b.get("profile_id") or "")
+    conf_a = round(profile_confidence(a, reference_time), 4)
+    conf_b = round(profile_confidence(b, reference_time), 4)
+    evidence = "low" if insufficient else evidence_level(coverage, conf_a, conf_b)
+    uncertainty = (_sensitivity_band(leaves, score, f"{a_id}|{b_id}")
+                   if score is not None else {})
+
+    if evidence == "low" and not insufficient:
+        limitations.append(
+            "Evidence level low: one or both profiles are incomplete or stale enough "
+            "that small changes in answers would move this score.")
 
     return PairScore(
-        a_id=str(a.get("participant_id") or a.get("profile_id") or ""),
-        b_id=str(b.get("participant_id") or b.get("profile_id") or ""),
+        a_id=a_id, b_id=b_id,
         score=score, coverage=round(coverage, 4), insufficient=insufficient,
         dimensions=dims, leaves=leaves, gate_a=gate_a, gate_b=gate_b,
         eligible_a=not gate_a and not insufficient,
         eligible_b=not gate_b and not insufficient,
-        confidence_a=round(profile_confidence(a, reference_time), 4),
-        confidence_b=round(profile_confidence(b, reference_time), 4),
+        confidence_a=conf_a, confidence_b=conf_b,
+        evidence=evidence, uncertainty=uncertainty,
         limitations=limitations,
     )
 
@@ -289,12 +375,25 @@ def preference_mean(owner: dict, other: dict) -> float | None:
     return None if den == 0 else num / den
 
 
+def preference_count(owner: dict, other: dict) -> int:
+    """Number of traits where `owner` stated a range that `other` answered."""
+    owner_prefs = owner.get("preferences") or {}
+    other_traits = other.get("traits") or {}
+    return sum(1 for name in S.TRAITS
+               if (owner_prefs.get(name) or {}).get("range")
+               and other_traits.get(name) is not None)
+
+
 def directional_score(a: dict, b: dict, ps: PairScore | None = None,
                       embed=None) -> float | None:
     """Score for 'how much would A be interested in B', in [0, 100].
 
-    50/50 blend of similarity-based compatibility and A's stated preferences.
-    Returns 0.0 when A's deal-breakers are violated, None when insufficient.
+    Blend of similarity-based compatibility and A's stated preferences. The
+    preference half is shrunk toward the compatibility half when A stated only a
+    few preferences, so one stated range cannot dominate the score. At four or
+    more answered preferences the blend is the pre-registered 50/50.
+
+    Returns 0.0 when A's hard constraints are violated, None when insufficient.
     """
     ps = ps or score_pair(a, b, embed=embed)
     if ps.score is None:
@@ -304,8 +403,9 @@ def directional_score(a: dict, b: dict, ps: PairScore | None = None,
     pref = preference_mean(a, b)
     if pref is None:
         return ps.score
-    blended = (S.DIRECTIONAL_SIM_WEIGHT * (ps.score / 100.0)
-               + (1 - S.DIRECTIONAL_SIM_WEIGHT) * pref)
+    weight_pref = (1 - S.DIRECTIONAL_SIM_WEIGHT) * min(
+        1.0, preference_count(a, b) / 4.0)
+    blended = (1 - weight_pref) * (ps.score / 100.0) + weight_pref * pref
     return round(100.0 * blended, 2)
 
 
@@ -330,6 +430,8 @@ def explanation(ps: PairScore, top: int = 4) -> dict:
         "gate_a": ps.gate_a,
         "gate_b": ps.gate_b,
         "coverage": ps.coverage,
+        "evidence": ps.evidence,
+        "uncertainty": ps.uncertainty,
     }
 
 

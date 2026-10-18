@@ -174,11 +174,13 @@ class Feedback(Base):
     prediction_id: Mapped[str | None] = mapped_column(ForeignKey("predictions.id"),
                                                        nullable=True)
     feedback_type: Mapped[str] = mapped_column(String(32))
+    # Stable idempotency key. A plain (participant, prediction, type) unique index
+    # does not dedupe rows where prediction_id is NULL, which is the common case.
+    dedupe_key: Mapped[str] = mapped_column(String(160))
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     __table_args__ = (
-        UniqueConstraint("participant_id", "prediction_id", "feedback_type",
-                         name="uq_feedback_dedupe"),
+        UniqueConstraint("participant_id", "dedupe_key", name="uq_feedback_dedupe"),
     )

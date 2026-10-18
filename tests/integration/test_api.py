@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from backend.core.ratelimit import LIMITER
+from backend.db.models import Profile
+from backend.db.session import get_sessionmaker
+
 
 def test_health(client):
     body = client.get("/api/v1/health").json()
@@ -173,6 +177,127 @@ def test_consent_withdrawal_prevents_further_writes(client, participant,
                                  "other_profile_id": b["profile_id"], "value": True},
                            headers=a["headers"])
     assert response.status_code in (401, 403)
+
+
+def test_consent_rejects_unknown_study_version(client, participant):
+    party = participant()
+    response = client.post(f"/api/v1/participants/{party['id']}/consent",
+                           json={"study_version": "1999-ancient", "consented": True},
+                           headers=party["headers"])
+    assert response.status_code == 409
+    assert response.json()["detail"]["supported"]
+
+
+def test_consent_rejects_unknown_purpose(client, participant):
+    party = participant()
+    response = client.post(f"/api/v1/participants/{party['id']}/consent",
+                           json={"study_version": "2026-10-pilot",
+                                 "purpose": "advertising", "consented": True},
+                           headers=party["headers"])
+    assert response.status_code == 400
+
+
+def test_oversized_payload_is_rejected(client, participant, profile_factory):
+    party = participant()
+    payload = profile_factory(interests=[f"topic-{i}" for i in range(60)])
+    response = client.post("/api/v1/profiles", json=payload, headers=party["headers"])
+    assert response.status_code == 422
+
+
+def test_profile_with_old_schema_cannot_be_scored(client, participant, profile_factory,
+                                                  research_headers):
+    a = participant(profile_factory())
+    b = participant(profile_factory())
+    session = get_sessionmaker()()
+    session.query(Profile).filter(Profile.id == b["profile_id"]).update(
+        {"feature_schema_version": "0.9.0"})
+    session.commit()
+    session.close()
+
+    response = client.post("/api/v1/compatibility/score",
+                           json={"profile_a_id": a["profile_id"],
+                                 "profile_b_id": b["profile_id"]},
+                           headers=research_headers)
+    assert response.status_code == 409
+    assert response.json()["detail"]["supported"]
+
+
+def test_export_contains_own_pair_outcomes_only(client, participant, profile_factory):
+    a = participant(profile_factory())
+    b = participant(profile_factory())
+    client.post("/api/v1/feedback",
+                json={"feedback_type": "interest", "other_profile_id": b["profile_id"],
+                      "value": True}, headers=a["headers"])
+    client.post("/api/v1/feedback",
+                json={"feedback_type": "interest", "other_profile_id": a["profile_id"],
+                      "value": False}, headers=b["headers"])
+
+    body = client.post(f"/api/v1/participants/{a['id']}/export",
+                       headers=a["headers"]).json()
+    assert len(body["pair_outcomes"]) == 1
+    outcome = body["pair_outcomes"][0]
+    assert outcome["interest"] is True           # A's own answer
+    assert outcome["other_profile_id"] == b["profile_id"]
+
+    other = client.post(f"/api/v1/participants/{b['id']}/export",
+                        headers=b["headers"]).json()
+    assert other["pair_outcomes"][0]["interest"] is False
+    assert other["pair_outcomes"][0]["other_profile_id"] == a["profile_id"]
+
+
+def test_rate_limit_is_enforced(client, monkeypatch):
+    monkeypatch.setenv("ACCOUNTANT_RL_PARTICIPANTS", "2/60")
+    LIMITER.reset()
+    try:
+        assert client.post("/api/v1/participants", json={}).status_code == 201
+        assert client.post("/api/v1/participants", json={}).status_code == 201
+        blocked = client.post("/api/v1/participants", json={})
+        assert blocked.status_code == 429
+        assert "Retry-After" in blocked.headers
+    finally:
+        monkeypatch.delenv("ACCOUNTANT_RL_PARTICIPANTS", raising=False)
+        LIMITER.reset()
+
+
+def test_experiment_seed_is_respected(client, research_headers):
+    experiment = client.post("/api/v1/experiments", json={
+        "name": "seed-check",
+        "hypothesis": "the experiment seed is used",
+        "protocol": {"synthetic": {"n_profiles": 40, "exposure_k": 8},
+                     "protocol": {"bootstrap_iters": 30}},
+        "random_seed": 4242,
+    }, headers=research_headers).json()
+
+    run = client.post(f"/api/v1/experiments/{experiment['experiment_id']}/runs",
+                      json={}, headers=research_headers).json()
+    status = client.get(f"/api/v1/runs/{run['run_id']}", headers=research_headers).json()
+    assert status["seed"] == 4242
+    assert status["comparison"]["mutual"]["ci_width"] is not None
+
+
+def test_failed_run_is_persisted(client, research_headers):
+    experiment = client.post("/api/v1/experiments", json={
+        "name": "invalid-run",
+        "hypothesis": "config validation fails before modelling",
+        "protocol": {"synthetic": {"n_profiles": 10, "exposure_k": 5}},
+        "random_seed": 1,
+    }, headers=research_headers).json()
+
+    response = client.post(f"/api/v1/experiments/{experiment['experiment_id']}/runs",
+                           json={}, headers=research_headers)
+    assert response.status_code in (400, 500)
+
+    runs = client.get(f"/api/v1/experiments/{experiment['experiment_id']}/runs",
+                      headers=research_headers).json()["items"]
+    assert runs
+    assert runs[0]["status"] in {"failed", "running", "queued"}
+
+
+def test_health_reports_database(client):
+    body = client.get("/api/v1/health").json()
+    assert body["status"] == "ok"
+    assert body["database"] == "ok"
+    assert body["participants"] >= 0
 
 
 def test_experiment_run_endpoint(client, research_headers):

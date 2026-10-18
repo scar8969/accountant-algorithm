@@ -36,12 +36,17 @@ def pair_time(pair: dict) -> datetime:
 
 def grouped_pair_split(pairs: list[dict], test_frac: float = 0.3,
                        seed: int = 0) -> tuple[list[dict], list[dict], list[dict]]:
-    """Split by participant; drop pairs that straddle the two sides."""
-    if len(pairs) < 4:
-        return pairs, [], []
+    """Split by participant; drop pairs that straddle the two sides.
+
+    Refuses to produce a split that cannot support evaluation: a silent empty test
+    set would make every downstream metric meaningless.
+    """
     people = sorted({p for pair in pairs for p in participant_ids(pair)})
-    if len(people) < 4:
-        return pairs, [], []
+    if len(people) < 8:
+        raise ValueError(f"need at least 8 participants for a grouped split, got "
+                         f"{len(people)}")
+    if len(pairs) < 12:
+        raise ValueError(f"need at least 12 pairs for a grouped split, got {len(pairs)}")
 
     import numpy as np
     rng = np.random.default_rng(seed)
@@ -59,6 +64,8 @@ def grouped_pair_split(pairs: list[dict], test_frac: float = 0.3,
             test.append(pair)
         else:
             dropped.append(pair)
+    if not test or not train:
+        raise ValueError("grouped split produced an empty train or test set")
     return train, test, dropped
 
 
@@ -68,6 +75,38 @@ def temporal_pair_split(pairs: list[dict],
     cut = int(round(len(ordered) * train_frac))
     cut = max(1, min(len(ordered) - 1, cut)) if len(ordered) > 1 else len(ordered)
     return ordered[:cut], ordered[cut:]
+
+
+def assert_no_leakage(train: list[dict], test: list[dict], *,
+                      require_disjoint_people: bool = True) -> None:
+    """Hard failure rather than a report: a leaking split must stop the run.
+
+    The temporal protocol deliberately allows the same person on both sides, so
+    it is checked for pair overlap and ordering instead (see
+    `assert_temporal_order`).
+    """
+    report = leakage_report(train, test)
+    problems = []
+    if require_disjoint_people and not report["disjoint_participants"]:
+        problems.append(f"{len(report['shared_participants'])} shared participants")
+    if not report["disjoint_pairs"]:
+        problems.append(f"{report['shared_pairs']} shared pairs")
+    if problems:
+        raise AssertionError("split leakage detected — " + "; ".join(problems))
+
+
+def assert_temporal_order(train: list[dict], test: list[dict]) -> None:
+    """Train observations must all precede test observations; pairs must not repeat."""
+    if not train or not test:
+        raise ValueError("temporal split produced an empty train or test set")
+    latest_train = max(pair_time(p) for p in train)
+    earliest_test = min(pair_time(p) for p in test)
+    if latest_train > earliest_test:
+        raise AssertionError(
+            f"temporal leakage: train extends to {latest_train.isoformat()} but test "
+            f"starts at {earliest_test.isoformat()}")
+    if {pair_key(p) for p in train} & {pair_key(p) for p in test}:
+        raise AssertionError("temporal split shares pairs between train and test")
 
 
 def leakage_report(train: list[dict], test: list[dict]) -> dict:
@@ -114,5 +153,5 @@ def overlapping_pairs(pairs_a: list[dict], pairs_b: list[dict]) -> int:
 
 
 __all__ = ["grouped_pair_split", "temporal_pair_split", "leakage_report",
-           "candidate_sets", "pair_key", "pair_time", "participant_ids",
-           "overlapping_pairs"]
+           "assert_no_leakage", "assert_temporal_order", "candidate_sets",
+           "pair_key", "pair_time", "participant_ids", "overlapping_pairs"]

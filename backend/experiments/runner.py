@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from ..algorithms.base import TaskModel
-from ..algorithms.registry import DEFAULT_MODELS, build_model
+from ..algorithms.registry import DEFAULT_MODELS, build_model, registered_models
 from ..evaluation import calibration as calib
 from ..evaluation import classification as cls
 from ..evaluation import ranking as rk
@@ -27,8 +27,8 @@ from ..features.embeddings import get_default_provider
 from ..features.structured import explanation, score_pair
 from .simulation import (SIMULATION_VERSION, generate_profiles, simulate_pairs,
                          simulation_manifest)
-from .splits import (candidate_sets, grouped_pair_split, leakage_report,
-                     temporal_pair_split)
+from .splits import (assert_no_leakage, assert_temporal_order, candidate_sets,
+                     grouped_pair_split, leakage_report, temporal_pair_split)
 
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
 
@@ -60,7 +60,72 @@ DEFAULT_CONFIG: dict = {
 def load_config(path: str | Path) -> dict:
     import yaml
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
-    return deep_merge(DEFAULT_CONFIG, raw)
+    cfg = deep_merge(DEFAULT_CONFIG, raw)
+    validate_config(cfg)
+    return cfg
+
+
+def validate_config(cfg: dict) -> None:
+    """Fail loudly on a bad experiment config instead of mid-run.
+
+    A typo in a model name or an out-of-range split silently produces a
+    meaningless result otherwise.
+    """
+    errors: list[str] = []
+    unknown = sorted(set(cfg) - set(DEFAULT_CONFIG))
+    if unknown:
+        errors.append(f"unknown top-level keys: {unknown}")
+
+    sc = cfg.get("synthetic") or {}
+    n_profiles = sc.get("n_profiles")
+    if not isinstance(n_profiles, int) or not 20 <= n_profiles <= 5000:
+        errors.append("synthetic.n_profiles must be an integer in [20, 5000]")
+    exposure = sc.get("exposure_k")
+    if not isinstance(exposure, int) or not 2 <= exposure <= 100:
+        errors.append("synthetic.exposure_k must be an integer in [2, 100]")
+    if isinstance(n_profiles, int) and isinstance(exposure, int) and exposure >= n_profiles:
+        errors.append("synthetic.exposure_k must be smaller than n_profiles")
+    missing = sc.get("missing_rate", 0.0)
+    if not isinstance(missing, (int, float)) or not 0.0 <= float(missing) <= 0.9:
+        errors.append("synthetic.missing_rate must be in [0, 0.9]")
+
+    pr = cfg.get("protocol") or {}
+    frac = pr.get("test_frac")
+    if not isinstance(frac, (int, float)) or not 0.10 <= float(frac) <= 0.50:
+        errors.append("protocol.test_frac must be in [0.10, 0.50]")
+    k = pr.get("k")
+    if not isinstance(k, int) or not 1 <= k <= 20:
+        errors.append("protocol.k must be an integer in [1, 20]")
+    iters = pr.get("bootstrap_iters")
+    if not isinstance(iters, int) or not 20 <= iters <= 5000:
+        errors.append("protocol.bootstrap_iters must be an integer in [20, 5000]")
+    bins = pr.get("bins")
+    if not isinstance(bins, int) or not 2 <= bins <= 50:
+        errors.append("protocol.bins must be an integer in [2, 50]")
+    tfrac = pr.get("temporal_train_frac", 0.7)
+    if not isinstance(tfrac, (int, float)) or not 0.3 <= float(tfrac) <= 0.9:
+        errors.append("protocol.temporal_train_frac must be in [0.3, 0.9]")
+
+    if cfg.get("primary_metric") not in {"pr_auc", "roc_auc", "ndcg@5", "mrr"}:
+        errors.append("primary_metric must be one of pr_auc, roc_auc, ndcg@5, mrr")
+
+    models = cfg.get("models") or {}
+    if not models:
+        errors.append("models must define at least one task")
+    allowed_tasks = {"directional", "mutual", "interaction"}
+    known = set(registered_models())
+    for task, names in models.items():
+        if task not in allowed_tasks:
+            errors.append(f"unknown task in models: {task}")
+            continue
+        if not names:
+            errors.append(f"models.{task} is empty")
+        for name in names or []:
+            if name not in known:
+                errors.append(f"unknown model '{name}' in models.{task}")
+
+    if errors:
+        raise ValueError("invalid experiment config: " + "; ".join(errors))
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -116,6 +181,18 @@ def make_rows(pairs: list[dict]) -> list[dict]:
     return rows
 
 
+def pair_rows(pairs: list[dict]) -> list[dict]:
+    """One row per unordered pair.
+
+    Mutual interest and interaction quality are pair-level outcomes. Building them
+    from both orderings would duplicate every observation, halve the apparent
+    variance and inflate the positive count, so those tasks use this single row.
+    """
+    return [{"a": p["a"], "b": p["b"], "interest_a": p["interest_a"],
+             "mutual": p["mutual"], "quality_a": p["quality_a"], "pair": p}
+            for p in pairs]
+
+
 def _rows_for(rows: list[dict], task: str) -> list[dict]:
     if task == "directional":
         return [r for r in rows if r["interest_a"] is not None]
@@ -124,6 +201,13 @@ def _rows_for(rows: list[dict], task: str) -> list[dict]:
     if task == "interaction":
         return [r for r in rows if r["quality_a"] is not None]
     raise ValueError(task)
+
+
+def rows_for_task(pairs: list[dict], task: str) -> list[dict]:
+    """Task-appropriate rows: both directions for A, one row per pair for B and C."""
+    if task == "directional":
+        return _rows_for(make_rows(pairs), task)
+    return _rows_for(pair_rows(pairs), task)
 
 
 # --------------------------------------------------------------------------- #
@@ -213,18 +297,17 @@ def evaluate_split(train_pairs: list[dict], test_pairs: list[dict], cfg: dict,
     bins = protocol["bins"]
     seed = cfg["seed"]
 
-    train_rows_all = make_rows(train_pairs)
-    test_rows_all = make_rows(test_pairs)
     cand_map = candidate_sets(test_pairs)
 
     out: dict = {"tasks": {}, "per_model": {}, "dataset": {
         "train_pairs": len(train_pairs), "test_pairs": len(test_pairs),
-        "train_rows": len(train_rows_all), "test_rows": len(test_rows_all),
+        "train_rows": len(make_rows(train_pairs)),
+        "test_rows": len(make_rows(test_pairs)),
     }}
 
     for task in tasks:
-        train_rows = _rows_for(train_rows_all, task)
-        test_rows = _rows_for(test_rows_all, task)
+        train_rows = rows_for_task(train_pairs, task)
+        test_rows = rows_for_task(test_pairs, task)
         out["dataset"][f"n_train_{task}"] = len(train_rows)
         out["dataset"][f"n_test_{task}"] = len(test_rows)
         if not train_rows or not test_rows:
@@ -253,7 +336,6 @@ def evaluate_split(train_pairs: list[dict], test_pairs: list[dict], cfg: dict,
                         "mean_pred": round(float(np.mean(p[mask])), 4),
                         "mean_actual": round(float(np.mean(actual[mask])), 4),
                     }
-                payload["ranking"] = _rank_block(test_rows, model, "mutual", k, cand_map)
                 task_models[name] = payload
                 continue
 
@@ -302,11 +384,23 @@ def _compare(task_results: dict, task: str, cfg: dict) -> dict:
         "delta_vs_structured": None if (best_value is None or structured_v is None)
         else round(best_value - structured_v, 4),
         "ci": models.get(best_name, {}).get("metrics", {}).get("ci") if best_name else None,
+        "ci_width": _ci_width(models.get(best_name, {}).get("metrics", {}).get("ci")),
     }
 
 
+def _ci_width(ci: dict | None) -> float | None:
+    if not ci or ci.get("lo") is None or ci.get("hi") is None:
+        return None
+    return round(float(ci["hi"]) - float(ci["lo"]), 4)
+
+
 def _failure_cases(eval_main: dict, test_pairs: list[dict], limit: int = 8) -> list[dict]:
-    """High-confidence misses from the best mutual model, with explanations."""
+    """High-score misses and low-score hits for the structured score.
+
+    These are deliberately the *structured* model's errors (so each case can be
+    explained feature by feature), even though the run's best model may be a
+    learned one. The `scored_by` field says so.
+    """
     mutual = eval_main["tasks"].get("mutual", {})
     if not mutual:
         return []
@@ -331,7 +425,8 @@ def _failure_cases(eval_main: dict, test_pairs: list[dict], limit: int = 8) -> l
             "top_positive": exp["contributions"],
             "top_conflict": exp["conflicts"],
             "missing": exp["missing"],
-            "model": best,
+            "scored_by": "structured",
+            "best_model_in_run": best,
         })
     false_positives = [c for c in cases if c["observed_mutual"] is False
                        and (c["structured_score"] or 0) >= 60]
@@ -342,11 +437,38 @@ def _failure_cases(eval_main: dict, test_pairs: list[dict], limit: int = 8) -> l
     return (false_positives[:limit] + false_negatives[:limit])
 
 
+def _power_note(task_results: dict, counts: dict) -> dict:
+    """Plain-language precision statement for the primary task."""
+    mutual = task_results.get("mutual") or {}
+    scored = [(name, payload["metrics"]["pr_auc"], payload["metrics"].get("ci") or {})
+              for name, payload in mutual.items()
+              if payload.get("metrics", {}).get("pr_auc") is not None]
+    if not scored:
+        return {"statement": "No mutual-interest model produced a score."}
+    name, value, ci = max(scored, key=lambda row: row[1])
+    width = _ci_width(ci)
+    positives = counts.get("mutual_positives", 0)
+    statement = (
+        f"With {positives} positive mutual outcomes in the held-out split, the 95% "
+        f"interval for the best model ({name}) spans {width:.2f} PR-AUC."
+        if width is not None else
+        f"With {positives} positive mutual outcomes the interval could not be computed.")
+    return {
+        "best_model": name,
+        "best_pr_auc": round(value, 4),
+        "ci_width": width,
+        "mutual_positives": positives,
+        "statement": statement + " Differences smaller than that width are "
+                                "indistinguishable in this sample.",
+    }
+
+
 # --------------------------------------------------------------------------- #
 # entry point
 # --------------------------------------------------------------------------- #
 def run_experiment(cfg: dict, out_dir: str | Path | None = None,
                    write_artifacts: bool = True) -> dict:
+    validate_config(cfg)
     created = datetime.now(timezone.utc).isoformat()
     seed = cfg["seed"]
     embed = get_default_provider()
@@ -354,6 +476,7 @@ def run_experiment(cfg: dict, out_dir: str | Path | None = None,
     profiles, pairs = build_synthetic(cfg)
     train_pairs, test_pairs, dropped = grouped_pair_split(
         pairs, test_frac=cfg["protocol"]["test_frac"], seed=seed)
+    assert_no_leakage(train_pairs, test_pairs)
 
     main = evaluate_split(train_pairs, test_pairs, cfg, embed=embed)
 
@@ -364,11 +487,12 @@ def run_experiment(cfg: dict, out_dir: str | Path | None = None,
         for task, names in cfg["models"].items()
     }
     t_train, t_test = temporal_pair_split(pairs, cfg["protocol"]["temporal_train_frac"])
+    assert_temporal_order(t_train, t_test)
     temporal = evaluate_split(t_train, t_test, cfg, models=temporal_models, embed=embed)
 
-    directional_rows = _rows_for(make_rows(test_pairs), "directional")
-    mutual_rows = _rows_for(make_rows(test_pairs), "mutual")
-    interaction_rows = _rows_for(make_rows(test_pairs), "interaction")
+    directional_rows = rows_for_task(test_pairs, "directional")
+    mutual_rows = rows_for_task(test_pairs, "mutual")
+    interaction_rows = rows_for_task(test_pairs, "interaction")
 
     d_pos = sum(1 for r in directional_rows if r["interest_a"])
     m_pos = sum(1 for r in mutual_rows if r["mutual"])
@@ -414,9 +538,11 @@ def run_experiment(cfg: dict, out_dir: str | Path | None = None,
             "dropped_straddling_pairs": len(dropped),
             "temporal": {
                 "protocol": "temporal (known people, later observations)",
+                "participants_may_overlap": True,
                 "train_frac": cfg["protocol"]["temporal_train_frac"],
                 "dataset": temporal["dataset"],
                 "leakage": leakage_report(t_train, t_test),
+                "ordering_verified": True,
                 "results": temporal["tasks"],
             },
         },
@@ -424,6 +550,8 @@ def run_experiment(cfg: dict, out_dir: str | Path | None = None,
         "comparison": {task: _compare(main["tasks"], task, cfg)
                        for task in ("directional", "mutual", "interaction")},
         "failure_cases": _failure_cases(main, test_pairs),
+        "power_note": _power_note(main["tasks"], {
+            "mutual_positives": m_pos, "directional_positives": d_pos}),
         "limitations": cfg["limitations"],
     }
 

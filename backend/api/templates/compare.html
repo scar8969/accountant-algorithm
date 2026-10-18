@@ -83,6 +83,13 @@
         <div class="foot">weighted coverage {{ '%.0f'|format(result.coverage * 100) }}% ·
           gates: A→B {% if result.gate_a %}<span class="no">{{ result.gate_a|join(', ') }}</span>{% else %}<span class="ok">none</span>{% endif %} ·
           B→A {% if result.gate_b %}<span class="no">{{ result.gate_b|join(', ') }}</span>{% else %}<span class="ok">none</span>{% endif %}</div>
+        {% if result.explanation.uncertainty %}
+          <div class="foot">evidence: <b>{{ result.explanation.evidence }}</b> ·
+            sensitivity band under ±{{ (result.explanation.uncertainty.sigma * 100)|round|int }}%
+            weight perturbation:
+            {{ '%.1f'|format(result.explanation.uncertainty.p05) }}–{{ '%.1f'|format(result.explanation.uncertainty.p95) }}
+            (not a confidence interval)</div>
+        {% endif %}
       </div>
     </div>
   </section>

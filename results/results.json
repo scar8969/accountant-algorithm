@@ -3,7 +3,7 @@
     "name": "h1_structured_vs_baselines",
     "hypothesis": "H1: a structured compatibility model ranks mutually interested pairs more effectively than random ranking and a text-similarity baseline on held-out participants.\nSecondary: H2 adding text embeddings improves ranking beyond structured features alone; H4 model confidence tracks observed outcome frequencies.\n",
     "primary_metric": "pr_auc",
-    "created_at": "2026-10-18T12:01:34.512196+00:00",
+    "created_at": "2026-10-18T12:35:46.442771+00:00",
     "config_hash": "082951ce029c7bab",
     "code_revision": "unknown",
     "feature_schema_version": "1.0.0",
@@ -80,8 +80,8 @@
     "unknown_interest_directions": 1168,
     "test_positives": {
       "directional": 83,
-      "mutual": 16,
-      "interaction_good": 12
+      "mutual": 8,
+      "interaction_good": 6
     }
   },
   "protocol": {
@@ -103,6 +103,7 @@
     "dropped_straddling_pairs": 598,
     "temporal": {
       "protocol": "temporal (known people, later observations)",
+      "participants_may_overlap": true,
       "train_frac": 0.7,
       "dataset": {
         "train_pairs": 1039,
@@ -111,10 +112,10 @@
         "test_rows": 890,
         "n_train_directional": 1266,
         "n_test_directional": 534,
-        "n_train_mutual": 454,
-        "n_test_mutual": 178,
-        "n_train_interaction": 52,
-        "n_test_interaction": 38
+        "n_train_mutual": 227,
+        "n_test_mutual": 89,
+        "n_train_interaction": 26,
+        "n_test_interaction": 19
       },
       "leakage": {
         "train_pairs": 1039,
@@ -227,6 +228,7 @@
         "disjoint_participants": false,
         "disjoint_pairs": true
       },
+      "ordering_verified": true,
       "results": {
         "directional": {
           "random": {
@@ -280,12 +282,12 @@
               "positives": 200,
               "prevalence": 0.3745,
               "probabilistic": false,
-              "pr_auc": 0.4078,
-              "roc_auc": 0.5594,
+              "pr_auc": 0.4093,
+              "roc_auc": 0.5596,
               "ci": {
-                "estimate": 0.4078,
-                "lo": 0.3551,
-                "hi": 0.4686,
+                "estimate": 0.4093,
+                "lo": 0.3561,
+                "hi": 0.4702,
                 "n_valid": 500,
                 "iters": 500
               }
@@ -570,16 +572,16 @@
               "note": "Uniform pseudo-random score keyed by (seed, participant ids)."
             },
             "metrics": {
-              "n": 178,
-              "positives": 44,
+              "n": 89,
+              "positives": 22,
               "prevalence": 0.2472,
               "probabilistic": false,
-              "pr_auc": 0.2246,
-              "roc_auc": 0.4347,
+              "pr_auc": 0.195,
+              "roc_auc": 0.3677,
               "ci": {
-                "estimate": 0.2246,
-                "lo": 0.1694,
-                "hi": 0.3246,
+                "estimate": 0.195,
+                "lo": 0.1252,
+                "hi": 0.2879,
                 "n_valid": 500,
                 "iters": 500
               }
@@ -607,16 +609,16 @@
               "note": "Pre-registered weights from features/schema.py; deal-breakers applied as hard gates."
             },
             "metrics": {
-              "n": 178,
-              "positives": 44,
+              "n": 89,
+              "positives": 22,
               "prevalence": 0.2472,
               "probabilistic": false,
               "pr_auc": 0.2329,
               "roc_auc": 0.4661,
               "ci": {
                 "estimate": 0.2329,
-                "lo": 0.1734,
-                "hi": 0.3315,
+                "lo": 0.149,
+                "hi": 0.404,
                 "n_valid": 500,
                 "iters": 500
               }
@@ -646,16 +648,16 @@
               "note": "Lexical hashing embedding: shared wording, not semantics. Swap the provider for a semantic encoder to test H2 properly."
             },
             "metrics": {
-              "n": 178,
-              "positives": 44,
+              "n": 89,
+              "positives": 22,
               "prevalence": 0.2472,
               "probabilistic": false,
               "pr_auc": 0.2621,
               "roc_auc": 0.5393,
               "ci": {
                 "estimate": 0.2621,
-                "lo": 0.1931,
-                "hi": 0.3615,
+                "lo": 0.1619,
+                "hi": 0.4267,
                 "n_valid": 500,
                 "iters": 500
               }
@@ -686,7 +688,7 @@
                 "outputs_probability": true,
                 "class": "DirectionalLogistic",
                 "C": 0.1,
-                "n_train": 454,
+                "n_train": 227,
                 "features": [
                   "compat_score",
                   "coverage",
@@ -707,15 +709,15 @@
               }
             },
             "metrics": {
-              "n": 178,
-              "positives": 44,
+              "n": 89,
+              "positives": 22,
               "prevalence": 0.2472,
               "probabilistic": true,
-              "pr_auc": 0.3102,
-              "roc_auc": 0.6126,
-              "log_loss": 0.5664,
-              "brier": 0.1891,
-              "ece": 0.0948,
+              "pr_auc": 0.2756,
+              "roc_auc": 0.5882,
+              "log_loss": 0.5889,
+              "brier": 0.1959,
+              "ece": 0.1301,
               "at_threshold": {
                 "threshold": 0.5,
                 "precision": 0.0,
@@ -723,281 +725,36 @@
                 "f1": 0.0,
                 "tp": 0,
                 "fp": 0,
-                "fn": 44,
-                "tn": 134
+                "fn": 22,
+                "tn": 67
               },
               "reliability": [
                 {
                   "lo": 0.0,
                   "hi": 0.1,
-                  "n": 34,
-                  "mean_pred": 0.0441,
-                  "frac_pos": 0.0588
+                  "n": 21,
+                  "mean_pred": 0.0661,
+                  "frac_pos": 0.0952
                 },
                 {
                   "lo": 0.1,
                   "hi": 0.2,
-                  "n": 102,
-                  "mean_pred": 0.1582,
-                  "frac_pos": 0.2745
+                  "n": 55,
+                  "mean_pred": 0.1475,
+                  "frac_pos": 0.3273
                 },
                 {
                   "lo": 0.2,
                   "hi": 0.3,
-                  "n": 42,
-                  "mean_pred": 0.2257,
-                  "frac_pos": 0.3333
+                  "n": 11,
+                  "mean_pred": 0.2245,
+                  "frac_pos": 0.1818
                 },
                 {
                   "lo": 0.3,
                   "hi": 0.4,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.4,
-                  "hi": 0.5,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.5,
-                  "hi": 0.6,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.6,
-                  "hi": 0.7,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.7,
-                  "hi": 0.8,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.8,
-                  "hi": 0.9,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                },
-                {
-                  "lo": 0.9,
-                  "hi": 1.0,
-                  "n": 0,
-                  "mean_pred": null,
-                  "frac_pos": null
-                }
-              ],
-              "ci": {
-                "estimate": 0.3102,
-                "lo": 0.2402,
-                "hi": 0.4419,
-                "n_valid": 500,
-                "iters": 500
-              },
-              "calibration": {
-                "n": 178,
-                "brier": 0.1891,
-                "ece": 0.0948,
-                "bins": [
-                  {
-                    "lo": 0.0,
-                    "hi": 0.1,
-                    "n": 34,
-                    "mean_pred": 0.0441,
-                    "frac_pos": 0.0588
-                  },
-                  {
-                    "lo": 0.1,
-                    "hi": 0.2,
-                    "n": 102,
-                    "mean_pred": 0.1582,
-                    "frac_pos": 0.2745
-                  },
-                  {
-                    "lo": 0.2,
-                    "hi": 0.3,
-                    "n": 42,
-                    "mean_pred": 0.2257,
-                    "frac_pos": 0.3333
-                  },
-                  {
-                    "lo": 0.3,
-                    "hi": 0.4,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.4,
-                    "hi": 0.5,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.5,
-                    "hi": 0.6,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.6,
-                    "hi": 0.7,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.7,
-                    "hi": 0.8,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.8,
-                    "hi": 0.9,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  },
-                  {
-                    "lo": 0.9,
-                    "hi": 1.0,
-                    "n": 0,
-                    "mean_pred": null,
-                    "frac_pos": null
-                  }
-                ],
-                "note": "Probability calibration on held-out pairs. With few positives these bins are noisy; read them with the reported intervals."
-              }
-            },
-            "ranking": {
-              "k": 5,
-              "n_queries": 52,
-              "skipped_queries": 0,
-              "ndcg@5": 0.4701,
-              "recall@5": 0.5962,
-              "mrr": 0.4279,
-              "hit_rate@5": 0.5962,
-              "coverage": 1.0,
-              "diversity": 0.6958
-            }
-          },
-          "mutual_logistic": {
-            "config": {
-              "name": "mutual_logistic",
-              "version": "1.0.0",
-              "seed": 20261018,
-              "outputs_probability": true,
-              "class": "MutualLogistic",
-              "C": 0.1,
-              "n_train": 454,
-              "features": [
-                "compat_score",
-                "coverage",
-                "goal_sim",
-                "text_sim",
-                "dim_values",
-                "dim_communication",
-                "dim_lifestyle",
-                "dim_goals",
-                "pref_a_to_b",
-                "pref_b_to_a",
-                "confidence_a",
-                "confidence_b",
-                "gate_a",
-                "gate_b",
-                "p_a_to_b",
-                "p_b_to_a"
-              ],
-              "estimator": "logistic_regression",
-              "inner_model": {
-                "name": "directional_logistic",
-                "version": "1.0.0",
-                "seed": 20261018,
-                "outputs_probability": true,
-                "class": "DirectionalLogistic",
-                "C": 0.1,
-                "n_train": 454,
-                "features": [
-                  "compat_score",
-                  "coverage",
-                  "goal_sim",
-                  "text_sim",
-                  "dim_values",
-                  "dim_communication",
-                  "dim_lifestyle",
-                  "dim_goals",
-                  "pref_a_to_b",
-                  "pref_b_to_a",
-                  "confidence_a",
-                  "confidence_b",
-                  "gate_a",
-                  "gate_b"
-                ],
-                "estimator": "logistic_regression"
-              }
-            },
-            "metrics": {
-              "n": 178,
-              "positives": 44,
-              "prevalence": 0.2472,
-              "probabilistic": true,
-              "pr_auc": 0.3012,
-              "roc_auc": 0.6364,
-              "log_loss": 0.5698,
-              "brier": 0.1913,
-              "ece": 0.1167,
-              "at_threshold": {
-                "threshold": 0.5,
-                "precision": 0.0,
-                "recall": 0.0,
-                "f1": 0.0,
-                "tp": 0,
-                "fp": 0,
-                "fn": 44,
-                "tn": 134
-              },
-              "reliability": [
-                {
-                  "lo": 0.0,
-                  "hi": 0.1,
-                  "n": 40,
-                  "mean_pred": 0.0438,
-                  "frac_pos": 0.1
-                },
-                {
-                  "lo": 0.1,
-                  "hi": 0.2,
-                  "n": 96,
-                  "mean_pred": 0.1563,
-                  "frac_pos": 0.2917
-                },
-                {
-                  "lo": 0.2,
-                  "hi": 0.3,
-                  "n": 36,
-                  "mean_pred": 0.2338,
-                  "frac_pos": 0.3333
-                },
-                {
-                  "lo": 0.3,
-                  "hi": 0.4,
-                  "n": 6,
-                  "mean_pred": 0.3245,
+                  "n": 2,
+                  "mean_pred": 0.3061,
                   "frac_pos": 0.0
                 },
                 {
@@ -1044,43 +801,43 @@
                 }
               ],
               "ci": {
-                "estimate": 0.3012,
-                "lo": 0.2336,
-                "hi": 0.4162,
+                "estimate": 0.2756,
+                "lo": 0.183,
+                "hi": 0.4187,
                 "n_valid": 500,
                 "iters": 500
               },
               "calibration": {
-                "n": 178,
-                "brier": 0.1913,
-                "ece": 0.1167,
+                "n": 89,
+                "brier": 0.1959,
+                "ece": 0.1301,
                 "bins": [
                   {
                     "lo": 0.0,
                     "hi": 0.1,
-                    "n": 40,
-                    "mean_pred": 0.0438,
-                    "frac_pos": 0.1
+                    "n": 21,
+                    "mean_pred": 0.0661,
+                    "frac_pos": 0.0952
                   },
                   {
                     "lo": 0.1,
                     "hi": 0.2,
-                    "n": 96,
-                    "mean_pred": 0.1563,
-                    "frac_pos": 0.2917
+                    "n": 55,
+                    "mean_pred": 0.1475,
+                    "frac_pos": 0.3273
                   },
                   {
                     "lo": 0.2,
                     "hi": 0.3,
-                    "n": 36,
-                    "mean_pred": 0.2338,
-                    "frac_pos": 0.3333
+                    "n": 11,
+                    "mean_pred": 0.2245,
+                    "frac_pos": 0.1818
                   },
                   {
                     "lo": 0.3,
                     "hi": 0.4,
-                    "n": 6,
-                    "mean_pred": 0.3245,
+                    "n": 2,
+                    "mean_pred": 0.3061,
                     "frac_pos": 0.0
                   },
                   {
@@ -1133,9 +890,254 @@
               "k": 5,
               "n_queries": 52,
               "skipped_queries": 0,
-              "ndcg@5": 0.4669,
+              "ndcg@5": 0.4466,
               "recall@5": 0.5962,
-              "mrr": 0.4263,
+              "mrr": 0.3942,
+              "hit_rate@5": 0.5962,
+              "coverage": 1.0,
+              "diversity": 0.6958
+            }
+          },
+          "mutual_logistic": {
+            "config": {
+              "name": "mutual_logistic",
+              "version": "1.0.0",
+              "seed": 20261018,
+              "outputs_probability": true,
+              "class": "MutualLogistic",
+              "C": 0.1,
+              "n_train": 227,
+              "features": [
+                "compat_score",
+                "coverage",
+                "goal_sim",
+                "text_sim",
+                "dim_values",
+                "dim_communication",
+                "dim_lifestyle",
+                "dim_goals",
+                "pref_a_to_b",
+                "pref_b_to_a",
+                "confidence_a",
+                "confidence_b",
+                "gate_a",
+                "gate_b",
+                "p_a_to_b",
+                "p_b_to_a"
+              ],
+              "estimator": "logistic_regression",
+              "inner_model": {
+                "name": "directional_logistic",
+                "version": "1.0.0",
+                "seed": 20261018,
+                "outputs_probability": true,
+                "class": "DirectionalLogistic",
+                "C": 0.1,
+                "n_train": 227,
+                "features": [
+                  "compat_score",
+                  "coverage",
+                  "goal_sim",
+                  "text_sim",
+                  "dim_values",
+                  "dim_communication",
+                  "dim_lifestyle",
+                  "dim_goals",
+                  "pref_a_to_b",
+                  "pref_b_to_a",
+                  "confidence_a",
+                  "confidence_b",
+                  "gate_a",
+                  "gate_b"
+                ],
+                "estimator": "logistic_regression"
+              }
+            },
+            "metrics": {
+              "n": 89,
+              "positives": 22,
+              "prevalence": 0.2472,
+              "probabilistic": true,
+              "pr_auc": 0.3213,
+              "roc_auc": 0.6493,
+              "log_loss": 0.5663,
+              "brier": 0.1898,
+              "ece": 0.1115,
+              "at_threshold": {
+                "threshold": 0.5,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "tp": 0,
+                "fp": 0,
+                "fn": 22,
+                "tn": 67
+              },
+              "reliability": [
+                {
+                  "lo": 0.0,
+                  "hi": 0.1,
+                  "n": 20,
+                  "mean_pred": 0.0559,
+                  "frac_pos": 0.1
+                },
+                {
+                  "lo": 0.1,
+                  "hi": 0.2,
+                  "n": 49,
+                  "mean_pred": 0.1486,
+                  "frac_pos": 0.3061
+                },
+                {
+                  "lo": 0.2,
+                  "hi": 0.3,
+                  "n": 18,
+                  "mean_pred": 0.2392,
+                  "frac_pos": 0.2778
+                },
+                {
+                  "lo": 0.3,
+                  "hi": 0.4,
+                  "n": 2,
+                  "mean_pred": 0.3137,
+                  "frac_pos": 0.0
+                },
+                {
+                  "lo": 0.4,
+                  "hi": 0.5,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                },
+                {
+                  "lo": 0.5,
+                  "hi": 0.6,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                },
+                {
+                  "lo": 0.6,
+                  "hi": 0.7,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                },
+                {
+                  "lo": 0.7,
+                  "hi": 0.8,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                },
+                {
+                  "lo": 0.8,
+                  "hi": 0.9,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                },
+                {
+                  "lo": 0.9,
+                  "hi": 1.0,
+                  "n": 0,
+                  "mean_pred": null,
+                  "frac_pos": null
+                }
+              ],
+              "ci": {
+                "estimate": 0.3213,
+                "lo": 0.2203,
+                "hi": 0.4794,
+                "n_valid": 500,
+                "iters": 500
+              },
+              "calibration": {
+                "n": 89,
+                "brier": 0.1898,
+                "ece": 0.1115,
+                "bins": [
+                  {
+                    "lo": 0.0,
+                    "hi": 0.1,
+                    "n": 20,
+                    "mean_pred": 0.0559,
+                    "frac_pos": 0.1
+                  },
+                  {
+                    "lo": 0.1,
+                    "hi": 0.2,
+                    "n": 49,
+                    "mean_pred": 0.1486,
+                    "frac_pos": 0.3061
+                  },
+                  {
+                    "lo": 0.2,
+                    "hi": 0.3,
+                    "n": 18,
+                    "mean_pred": 0.2392,
+                    "frac_pos": 0.2778
+                  },
+                  {
+                    "lo": 0.3,
+                    "hi": 0.4,
+                    "n": 2,
+                    "mean_pred": 0.3137,
+                    "frac_pos": 0.0
+                  },
+                  {
+                    "lo": 0.4,
+                    "hi": 0.5,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  },
+                  {
+                    "lo": 0.5,
+                    "hi": 0.6,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  },
+                  {
+                    "lo": 0.6,
+                    "hi": 0.7,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  },
+                  {
+                    "lo": 0.7,
+                    "hi": 0.8,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  },
+                  {
+                    "lo": 0.8,
+                    "hi": 0.9,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  },
+                  {
+                    "lo": 0.9,
+                    "hi": 1.0,
+                    "n": 0,
+                    "mean_pred": null,
+                    "frac_pos": null
+                  }
+                ],
+                "note": "Probability calibration on held-out pairs. With few positives these bins are noisy; read them with the reported intervals."
+              }
+            },
+            "ranking": {
+              "k": 5,
+              "n_queries": 52,
+              "skipped_queries": 0,
+              "ndcg@5": 0.4533,
+              "recall@5": 0.5962,
+              "mrr": 0.4054,
               "hit_rate@5": 0.5962,
               "coverage": 1.0,
               "diversity": 0.6958
@@ -1199,12 +1201,12 @@
           "positives": 83,
           "prevalence": 0.4346,
           "probabilistic": false,
-          "pr_auc": 0.4851,
-          "roc_auc": 0.5255,
+          "pr_auc": 0.4903,
+          "roc_auc": 0.5285,
           "ci": {
-            "estimate": 0.4851,
-            "lo": 0.4024,
-            "hi": 0.588,
+            "estimate": 0.4903,
+            "lo": 0.4038,
+            "hi": 0.5937,
             "n_valid": 500,
             "iters": 500
           }
@@ -1213,8 +1215,8 @@
           "k": 5,
           "n_queries": 30,
           "skipped_queries": 0,
-          "ndcg@5": 0.6237,
-          "recall@5": 0.7856,
+          "ndcg@5": 0.6297,
+          "recall@5": 0.7967,
           "mrr": 0.65,
           "hit_rate@5": 0.9667,
           "coverage": 0.8848,
@@ -1275,12 +1277,12 @@
           "positives": 83,
           "prevalence": 0.4346,
           "probabilistic": false,
-          "pr_auc": 0.4773,
-          "roc_auc": 0.5216,
+          "pr_auc": 0.4825,
+          "roc_auc": 0.5247,
           "ci": {
-            "estimate": 0.4773,
-            "lo": 0.3957,
-            "hi": 0.5831,
+            "estimate": 0.4825,
+            "lo": 0.3978,
+            "hi": 0.5879,
             "n_valid": 500,
             "iters": 500
           }
@@ -1289,8 +1291,8 @@
           "k": 5,
           "n_queries": 30,
           "skipped_queries": 0,
-          "ndcg@5": 0.6124,
-          "recall@5": 0.7856,
+          "ndcg@5": 0.6184,
+          "recall@5": 0.7967,
           "mrr": 0.625,
           "hit_rate@5": 0.9667,
           "coverage": 0.8848,
@@ -1526,16 +1528,16 @@
           "note": "Uniform pseudo-random score keyed by (seed, participant ids)."
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": false,
-          "pr_auc": 0.2623,
-          "roc_auc": 0.5012,
+          "pr_auc": 0.186,
+          "roc_auc": 0.3125,
           "ci": {
-            "estimate": 0.2623,
-            "lo": 0.1559,
-            "hi": 0.4875,
+            "estimate": 0.186,
+            "lo": 0.114,
+            "hi": 0.3614,
             "n_valid": 500,
             "iters": 500
           }
@@ -1563,16 +1565,16 @@
           "note": "Pre-registered weights from features/schema.py; deal-breakers applied as hard gates."
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": false,
           "pr_auc": 0.2935,
           "roc_auc": 0.5072,
           "ci": {
             "estimate": 0.2935,
-            "lo": 0.1842,
-            "hi": 0.5017,
+            "lo": 0.1444,
+            "hi": 0.5543,
             "n_valid": 500,
             "iters": 500
           }
@@ -1602,16 +1604,16 @@
           "note": "Lexical hashing embedding: shared wording, not semantics. Swap the provider for a semantic encoder to test H2 properly."
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": false,
           "pr_auc": 0.2291,
           "roc_auc": 0.4543,
           "ci": {
             "estimate": 0.2291,
-            "lo": 0.1409,
-            "hi": 0.3896,
+            "lo": 0.1308,
+            "hi": 0.4622,
             "n_valid": 500,
             "iters": 500
           }
@@ -1639,16 +1641,16 @@
           "note": "Pre-registered weights from features/schema.py; deal-breakers applied as hard gates."
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": false,
           "pr_auc": 0.306,
           "roc_auc": 0.5385,
           "ci": {
             "estimate": 0.306,
-            "lo": 0.1887,
-            "hi": 0.5189,
+            "lo": 0.1421,
+            "hi": 0.5987,
             "n_valid": 500,
             "iters": 500
           }
@@ -1679,7 +1681,7 @@
             "outputs_probability": true,
             "class": "DirectionalLogistic",
             "C": 0.1,
-            "n_train": 340,
+            "n_train": 170,
             "features": [
               "compat_score",
               "coverage",
@@ -1700,15 +1702,15 @@
           }
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": true,
-          "pr_auc": 0.2955,
-          "roc_auc": 0.601,
-          "log_loss": 0.5421,
-          "brier": 0.1806,
-          "ece": 0.1287,
+          "pr_auc": 0.3941,
+          "roc_auc": 0.5625,
+          "log_loss": 0.5655,
+          "brier": 0.1832,
+          "ece": 0.0815,
           "at_threshold": {
             "threshold": 0.5,
             "precision": 0.0,
@@ -1716,37 +1718,37 @@
             "f1": 0.0,
             "tp": 0,
             "fp": 0,
-            "fn": 16,
-            "tn": 52
+            "fn": 8,
+            "tn": 26
           },
           "reliability": [
             {
               "lo": 0.0,
               "hi": 0.1,
               "n": 8,
-              "mean_pred": 0.0447,
-              "frac_pos": 0.0
+              "mean_pred": 0.0744,
+              "frac_pos": 0.25
             },
             {
               "lo": 0.1,
               "hi": 0.2,
-              "n": 44,
-              "mean_pred": 0.164,
-              "frac_pos": 0.3182
+              "n": 18,
+              "mean_pred": 0.147,
+              "frac_pos": 0.1667
             },
             {
               "lo": 0.2,
               "hi": 0.3,
-              "n": 16,
-              "mean_pred": 0.2255,
-              "frac_pos": 0.125
+              "n": 7,
+              "mean_pred": 0.2399,
+              "frac_pos": 0.2857
             },
             {
               "lo": 0.3,
               "hi": 0.4,
-              "n": 0,
-              "mean_pred": null,
-              "frac_pos": null
+              "n": 1,
+              "mean_pred": 0.3074,
+              "frac_pos": 1.0
             },
             {
               "lo": 0.4,
@@ -1792,44 +1794,44 @@
             }
           ],
           "ci": {
-            "estimate": 0.2955,
-            "lo": 0.1914,
-            "hi": 0.4772,
+            "estimate": 0.3941,
+            "lo": 0.1649,
+            "hi": 0.7764,
             "n_valid": 500,
             "iters": 500
           },
           "calibration": {
-            "n": 68,
-            "brier": 0.1806,
-            "ece": 0.1287,
+            "n": 34,
+            "brier": 0.1832,
+            "ece": 0.0815,
             "bins": [
               {
                 "lo": 0.0,
                 "hi": 0.1,
                 "n": 8,
-                "mean_pred": 0.0447,
-                "frac_pos": 0.0
+                "mean_pred": 0.0744,
+                "frac_pos": 0.25
               },
               {
                 "lo": 0.1,
                 "hi": 0.2,
-                "n": 44,
-                "mean_pred": 0.164,
-                "frac_pos": 0.3182
+                "n": 18,
+                "mean_pred": 0.147,
+                "frac_pos": 0.1667
               },
               {
                 "lo": 0.2,
                 "hi": 0.3,
-                "n": 16,
-                "mean_pred": 0.2255,
-                "frac_pos": 0.125
+                "n": 7,
+                "mean_pred": 0.2399,
+                "frac_pos": 0.2857
               },
               {
                 "lo": 0.3,
                 "hi": 0.4,
-                "n": 0,
-                "mean_pred": null,
-                "frac_pos": null
+                "n": 1,
+                "mean_pred": 0.3074,
+                "frac_pos": 1.0
               },
               {
                 "lo": 0.4,
@@ -1881,12 +1883,12 @@
           "k": 5,
           "n_queries": 20,
           "skipped_queries": 0,
-          "ndcg@5": 0.3857,
-          "recall@5": 0.5,
-          "mrr": 0.3417,
+          "ndcg@5": 0.3619,
+          "recall@5": 0.475,
+          "mrr": 0.325,
           "hit_rate@5": 0.5,
           "coverage": 1.0,
-          "diversity": 0.7633
+          "diversity": 0.7533
         }
       },
       "mutual_logistic": {
@@ -1897,7 +1899,7 @@
           "outputs_probability": true,
           "class": "MutualLogistic",
           "C": 0.1,
-          "n_train": 340,
+          "n_train": 170,
           "features": [
             "compat_score",
             "coverage",
@@ -1924,7 +1926,7 @@
             "outputs_probability": true,
             "class": "DirectionalLogistic",
             "C": 0.1,
-            "n_train": 340,
+            "n_train": 170,
             "features": [
               "compat_score",
               "coverage",
@@ -1945,15 +1947,15 @@
           }
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": true,
-          "pr_auc": 0.3748,
-          "roc_auc": 0.5625,
-          "log_loss": 0.579,
-          "brier": 0.1847,
-          "ece": 0.0855,
+          "pr_auc": 0.4828,
+          "roc_auc": 0.5865,
+          "log_loss": 0.5634,
+          "brier": 0.1779,
+          "ece": 0.146,
           "at_threshold": {
             "threshold": 0.5,
             "precision": 0.0,
@@ -1961,44 +1963,44 @@
             "f1": 0.0,
             "tp": 0,
             "fp": 0,
-            "fn": 16,
-            "tn": 52
+            "fn": 8,
+            "tn": 26
           },
           "reliability": [
             {
               "lo": 0.0,
               "hi": 0.1,
-              "n": 14,
-              "mean_pred": 0.0455,
-              "frac_pos": 0.1429
+              "n": 9,
+              "mean_pred": 0.0719,
+              "frac_pos": 0.2222
             },
             {
               "lo": 0.1,
               "hi": 0.2,
-              "n": 32,
-              "mean_pred": 0.15,
-              "frac_pos": 0.25
+              "n": 17,
+              "mean_pred": 0.1396,
+              "frac_pos": 0.1765
             },
             {
               "lo": 0.2,
               "hi": 0.3,
-              "n": 10,
-              "mean_pred": 0.2494,
-              "frac_pos": 0.2
+              "n": 2,
+              "mean_pred": 0.2647,
+              "frac_pos": 0.5
             },
             {
               "lo": 0.3,
               "hi": 0.4,
-              "n": 6,
-              "mean_pred": 0.3576,
-              "frac_pos": 0.3333
+              "n": 4,
+              "mean_pred": 0.3373,
+              "frac_pos": 0.0
             },
             {
               "lo": 0.4,
               "hi": 0.5,
-              "n": 6,
-              "mean_pred": 0.4352,
-              "frac_pos": 0.3333
+              "n": 2,
+              "mean_pred": 0.4173,
+              "frac_pos": 1.0
             },
             {
               "lo": 0.5,
@@ -2037,51 +2039,51 @@
             }
           ],
           "ci": {
-            "estimate": 0.3748,
-            "lo": 0.2063,
-            "hi": 0.5887,
+            "estimate": 0.4828,
+            "lo": 0.1725,
+            "hi": 0.8257,
             "n_valid": 500,
             "iters": 500
           },
           "calibration": {
-            "n": 68,
-            "brier": 0.1847,
-            "ece": 0.0855,
+            "n": 34,
+            "brier": 0.1779,
+            "ece": 0.146,
             "bins": [
               {
                 "lo": 0.0,
                 "hi": 0.1,
-                "n": 14,
-                "mean_pred": 0.0455,
-                "frac_pos": 0.1429
+                "n": 9,
+                "mean_pred": 0.0719,
+                "frac_pos": 0.2222
               },
               {
                 "lo": 0.1,
                 "hi": 0.2,
-                "n": 32,
-                "mean_pred": 0.15,
-                "frac_pos": 0.25
+                "n": 17,
+                "mean_pred": 0.1396,
+                "frac_pos": 0.1765
               },
               {
                 "lo": 0.2,
                 "hi": 0.3,
-                "n": 10,
-                "mean_pred": 0.2494,
-                "frac_pos": 0.2
+                "n": 2,
+                "mean_pred": 0.2647,
+                "frac_pos": 0.5
               },
               {
                 "lo": 0.3,
                 "hi": 0.4,
-                "n": 6,
-                "mean_pred": 0.3576,
-                "frac_pos": 0.3333
+                "n": 4,
+                "mean_pred": 0.3373,
+                "frac_pos": 0.0
               },
               {
                 "lo": 0.4,
                 "hi": 0.5,
-                "n": 6,
-                "mean_pred": 0.4352,
-                "frac_pos": 0.3333
+                "n": 2,
+                "mean_pred": 0.4173,
+                "frac_pos": 1.0
               },
               {
                 "lo": 0.5,
@@ -2126,9 +2128,9 @@
           "k": 5,
           "n_queries": 20,
           "skipped_queries": 0,
-          "ndcg@5": 0.364,
+          "ndcg@5": 0.3456,
           "recall@5": 0.475,
-          "mrr": 0.3292,
+          "mrr": 0.3042,
           "hit_rate@5": 0.5,
           "coverage": 1.0,
           "diversity": 0.7533
@@ -2142,7 +2144,7 @@
           "outputs_probability": true,
           "class": "MutualGBM",
           "C": 0.1,
-          "n_train": 340,
+          "n_train": 170,
           "features": [
             "compat_score",
             "coverage",
@@ -2169,7 +2171,7 @@
             "outputs_probability": true,
             "class": "DirectionalLogistic",
             "C": 0.1,
-            "n_train": 340,
+            "n_train": 170,
             "features": [
               "compat_score",
               "coverage",
@@ -2190,81 +2192,81 @@
           }
         },
         "metrics": {
-          "n": 68,
-          "positives": 16,
+          "n": 34,
+          "positives": 8,
           "prevalence": 0.2353,
           "probabilistic": true,
-          "pr_auc": 0.2416,
-          "roc_auc": 0.4207,
-          "log_loss": 0.7834,
-          "brier": 0.2284,
-          "ece": 0.202,
+          "pr_auc": 0.3249,
+          "roc_auc": 0.4519,
+          "log_loss": 0.7133,
+          "brier": 0.2187,
+          "ece": 0.1933,
           "at_threshold": {
             "threshold": 0.5,
-            "precision": 0.3333,
-            "recall": 0.125,
-            "f1": 0.1818,
-            "tp": 2,
-            "fp": 4,
-            "fn": 14,
-            "tn": 48
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "tn": 26
           },
           "reliability": [
             {
               "lo": 0.0,
               "hi": 0.1,
-              "n": 34,
-              "mean_pred": 0.0438,
+              "n": 17,
+              "mean_pred": 0.0557,
               "frac_pos": 0.2353
             },
             {
               "lo": 0.1,
               "hi": 0.2,
-              "n": 18,
-              "mean_pred": 0.1535,
-              "frac_pos": 0.2222
+              "n": 5,
+              "mean_pred": 0.1402,
+              "frac_pos": 0.4
             },
             {
               "lo": 0.2,
               "hi": 0.3,
               "n": 4,
-              "mean_pred": 0.2467,
-              "frac_pos": 0.5
+              "mean_pred": 0.2466,
+              "frac_pos": 0.25
             },
             {
               "lo": 0.3,
               "hi": 0.4,
-              "n": 2,
-              "mean_pred": 0.3221,
+              "n": 3,
+              "mean_pred": 0.3343,
               "frac_pos": 0.0
             },
             {
               "lo": 0.4,
               "hi": 0.5,
-              "n": 4,
-              "mean_pred": 0.4242,
-              "frac_pos": 0.0
+              "n": 5,
+              "mean_pred": 0.441,
+              "frac_pos": 0.2
             },
             {
               "lo": 0.5,
               "hi": 0.6,
-              "n": 3,
-              "mean_pred": 0.5656,
-              "frac_pos": 0.3333
+              "n": 0,
+              "mean_pred": null,
+              "frac_pos": null
             },
             {
               "lo": 0.6,
               "hi": 0.7,
-              "n": 1,
-              "mean_pred": 0.6005,
-              "frac_pos": 1.0
+              "n": 0,
+              "mean_pred": null,
+              "frac_pos": null
             },
             {
               "lo": 0.7,
               "hi": 0.8,
-              "n": 2,
-              "mean_pred": 0.7672,
-              "frac_pos": 0.0
+              "n": 0,
+              "mean_pred": null,
+              "frac_pos": null
             },
             {
               "lo": 0.8,
@@ -2282,72 +2284,72 @@
             }
           ],
           "ci": {
-            "estimate": 0.2416,
-            "lo": 0.1484,
-            "hi": 0.4545,
+            "estimate": 0.3249,
+            "lo": 0.1391,
+            "hi": 0.6361,
             "n_valid": 500,
             "iters": 500
           },
           "calibration": {
-            "n": 68,
-            "brier": 0.2284,
-            "ece": 0.202,
+            "n": 34,
+            "brier": 0.2187,
+            "ece": 0.1933,
             "bins": [
               {
                 "lo": 0.0,
                 "hi": 0.1,
-                "n": 34,
-                "mean_pred": 0.0438,
+                "n": 17,
+                "mean_pred": 0.0557,
                 "frac_pos": 0.2353
               },
               {
                 "lo": 0.1,
                 "hi": 0.2,
-                "n": 18,
-                "mean_pred": 0.1535,
-                "frac_pos": 0.2222
+                "n": 5,
+                "mean_pred": 0.1402,
+                "frac_pos": 0.4
               },
               {
                 "lo": 0.2,
                 "hi": 0.3,
                 "n": 4,
-                "mean_pred": 0.2467,
-                "frac_pos": 0.5
+                "mean_pred": 0.2466,
+                "frac_pos": 0.25
               },
               {
                 "lo": 0.3,
                 "hi": 0.4,
-                "n": 2,
-                "mean_pred": 0.3221,
+                "n": 3,
+                "mean_pred": 0.3343,
                 "frac_pos": 0.0
               },
               {
                 "lo": 0.4,
                 "hi": 0.5,
-                "n": 4,
-                "mean_pred": 0.4242,
-                "frac_pos": 0.0
+                "n": 5,
+                "mean_pred": 0.441,
+                "frac_pos": 0.2
               },
               {
                 "lo": 0.5,
                 "hi": 0.6,
-                "n": 3,
-                "mean_pred": 0.5656,
-                "frac_pos": 0.3333
+                "n": 0,
+                "mean_pred": null,
+                "frac_pos": null
               },
               {
                 "lo": 0.6,
                 "hi": 0.7,
-                "n": 1,
-                "mean_pred": 0.6005,
-                "frac_pos": 1.0
+                "n": 0,
+                "mean_pred": null,
+                "frac_pos": null
               },
               {
                 "lo": 0.7,
                 "hi": 0.8,
-                "n": 2,
-                "mean_pred": 0.7672,
-                "frac_pos": 0.0
+                "n": 0,
+                "mean_pred": null,
+                "frac_pos": null
               },
               {
                 "lo": 0.8,
@@ -2371,9 +2373,9 @@
           "k": 5,
           "n_queries": 20,
           "skipped_queries": 0,
-          "ndcg@5": 0.314,
-          "recall@5": 0.5,
-          "mrr": 0.2458,
+          "ndcg@5": 0.3583,
+          "recall@5": 0.475,
+          "mrr": 0.3292,
           "hit_rate@5": 0.5,
           "coverage": 1.0,
           "diversity": 0.7633
@@ -2390,22 +2392,11 @@
           "class": "InteractionMean"
         },
         "metrics": {
-          "n": 14,
-          "mae": 0.5963,
-          "rmse": 0.7087,
-          "mean_pred": 4.1739,
-          "mean_actual": 4.2857
-        },
-        "ranking": {
-          "k": 5,
-          "n_queries": 20,
-          "skipped_queries": 0,
-          "ndcg@5": 0.2328,
-          "recall@5": 0.4,
-          "mrr": 0.1863,
-          "hit_rate@5": 0.4,
-          "coverage": 1.0,
-          "diversity": 0.7733
+          "n": 7,
+          "mae": 0.7267,
+          "rmse": 0.7759,
+          "mean_pred": 4.3043,
+          "mean_actual": 4.5714
         }
       },
       "interaction_ridge": {
@@ -2417,22 +2408,11 @@
           "class": "InteractionRidge"
         },
         "metrics": {
-          "n": 14,
-          "mae": 0.6211,
-          "rmse": 0.6846,
-          "mean_pred": 4.3837,
-          "mean_actual": 4.2857
-        },
-        "ranking": {
-          "k": 5,
-          "n_queries": 20,
-          "skipped_queries": 0,
-          "ndcg@5": 0.3807,
-          "recall@5": 0.5,
-          "mrr": 0.3417,
-          "hit_rate@5": 0.5,
-          "coverage": 1.0,
-          "diversity": 0.7633
+          "n": 7,
+          "mae": 0.7267,
+          "rmse": 0.7759,
+          "mean_pred": 4.3043,
+          "mean_actual": 4.5714
         }
       }
     }
@@ -2447,7 +2427,7 @@
         },
         {
           "model": "structured",
-          "value": 0.4851
+          "value": 0.4903
         },
         {
           "model": "text",
@@ -2455,7 +2435,7 @@
         },
         {
           "model": "structured_text",
-          "value": 0.4773
+          "value": 0.4825
         },
         {
           "model": "random",
@@ -2465,58 +2445,60 @@
       "best_model": "directional_logistic",
       "best_value": 0.4983,
       "delta_vs_random": 0.0874,
-      "delta_vs_structured": 0.0132,
+      "delta_vs_structured": 0.008,
       "ci": {
         "estimate": 0.4983,
         "lo": 0.4224,
         "hi": 0.6026,
         "n_valid": 500,
         "iters": 500
-      }
+      },
+      "ci_width": 0.1802
     },
     "mutual": {
       "primary_metric": "pr_auc",
       "ranking": [
         {
           "model": "mutual_logistic",
-          "value": 0.3748
+          "value": 0.4828
+        },
+        {
+          "model": "mutual_independence",
+          "value": 0.3941
+        },
+        {
+          "model": "mutual_gbm",
+          "value": 0.3249
         },
         {
           "model": "structured_text",
           "value": 0.306
         },
         {
-          "model": "mutual_independence",
-          "value": 0.2955
-        },
-        {
           "model": "structured",
           "value": 0.2935
         },
         {
-          "model": "random",
-          "value": 0.2623
-        },
-        {
-          "model": "mutual_gbm",
-          "value": 0.2416
-        },
-        {
           "model": "text",
           "value": 0.2291
+        },
+        {
+          "model": "random",
+          "value": 0.186
         }
       ],
       "best_model": "mutual_logistic",
-      "best_value": 0.3748,
-      "delta_vs_random": 0.1125,
-      "delta_vs_structured": 0.0813,
+      "best_value": 0.4828,
+      "delta_vs_random": 0.2968,
+      "delta_vs_structured": 0.1893,
       "ci": {
-        "estimate": 0.3748,
-        "lo": 0.2063,
-        "hi": 0.5887,
+        "estimate": 0.4828,
+        "lo": 0.1725,
+        "hi": 0.8257,
         "n_valid": 500,
         "iters": 500
-      }
+      },
+      "ci_width": 0.6532
     },
     "interaction": {
       "primary_metric": "pr_auc",
@@ -2534,7 +2516,8 @@
       "best_value": null,
       "delta_vs_random": null,
       "delta_vs_structured": null,
-      "ci": null
+      "ci": null,
+      "ci_width": null
     }
   },
   "failure_cases": [
@@ -2593,7 +2576,8 @@
         "independence",
         "routine_structure"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2648,7 +2632,8 @@
       "missing": [
         "goal"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2705,7 +2690,8 @@
         "frequency",
         "independence"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2762,7 +2748,8 @@
         "frequency",
         "independence"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2820,7 +2807,8 @@
         "conflict_approach",
         "routine_structure"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2873,7 +2861,8 @@
         }
       ],
       "missing": [],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2926,7 +2915,8 @@
         }
       ],
       "missing": [],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -2982,7 +2972,8 @@
         "directness",
         "frequency"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -3040,7 +3031,8 @@
         "frequency",
         "goal"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     },
     {
       "pair": [
@@ -3099,9 +3091,17 @@
         "independence",
         "routine_structure"
       ],
-      "model": "mutual_logistic"
+      "scored_by": "structured",
+      "best_model_in_run": "mutual_logistic"
     }
   ],
+  "power_note": {
+    "best_model": "mutual_logistic",
+    "best_pr_auc": 0.4828,
+    "ci_width": 0.6532,
+    "mutual_positives": 8,
+    "statement": "With 8 positive mutual outcomes in the held-out split, the 95% interval for the best model (mutual_logistic) spans 0.65 PR-AUC. Differences smaller than that width are indistinguishable in this sample."
+  },
   "limitations": [
     "Synthetic outcomes are generated by a documented simulator; outperforming a baseline here validates the pipeline, not the theory of attraction.",
     "Reported interest is a self-report proxy; it is not attraction itself.",

@@ -51,8 +51,10 @@ def bar_chart(items: list[dict], *, width: int = 640, max_value: float | None = 
         parts.append(f'<rect x="{label_width}" y="{y - 8}" width="{bar_w:.1f}" '
                      f'height="16" rx="3" fill="{colour}" opacity="0.85"/>')
         if item.get("lo") is not None and item.get("hi") is not None:
-            x1 = label_width + float(item["lo"]) / top * plot_w
-            x2 = label_width + float(item["hi"]) / top * plot_w
+            lo = min(max(float(item["lo"]), 0.0), top)
+            hi = min(max(float(item["hi"]), 0.0), top)
+            x1 = label_width + lo / top * plot_w
+            x2 = label_width + hi / top * plot_w
             parts.append(f'<line x1="{x1:.1f}" y1="{y}" x2="{x2:.1f}" y2="{y}" '
                          f'stroke="#e8eef7" stroke-width="1.4"/>')
             for x in (x1, x2):

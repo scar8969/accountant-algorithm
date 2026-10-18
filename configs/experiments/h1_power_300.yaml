@@ -1,0 +1,43 @@
+# Same hypothesis as h1_structured_vs_baselines, with a larger synthetic sample.
+# Purpose: show how much of the model ordering in the 100-profile run is sampling
+# noise. Still synthetic — a wider sample does not turn this into evidence about
+# people, it only tightens the intervals.
+name: h1_power_300
+hypothesis: >
+  H1 replication at larger sample: the structured baseline and the learned pair
+  models beat random ranking on held-out participants, and the ordering of models
+  is stable enough to interpret.
+primary_metric: pr_auc
+
+seed: 20261018
+
+synthetic:
+  n_profiles: 300
+  exposure_k: 30
+  missing_rate: 0.10
+
+protocol:
+  test_frac: 0.30
+  k: 5
+  bootstrap_iters: 500
+  bins: 10
+  temporal_train_frac: 0.70
+
+models:
+  directional:
+    - random
+    - structured
+    - text
+    - structured_text
+    - directional_logistic
+  mutual:
+    - random
+    - structured
+    - text
+    - structured_text
+    - mutual_independence
+    - mutual_logistic
+    - mutual_gbm
+  interaction:
+    - interaction_mean
+    - interaction_ridge

@@ -145,6 +145,15 @@ def build_report(results: dict, sweep: dict | None = None) -> str:
     lines.append(_table(rows, ["model", "PR-AUC", "95% CI", "ROC-AUC", "log loss",
                                "ECE", "NDCG@5"]))
     lines.append("")
+    power = results.get("power_note") or {}
+    if power.get("statement"):
+        lines.append(f"> {power['statement']}")
+        lines.append("")
+    lines.append("Mutual interest and interaction quality are *pair-level* outcomes: each "
+                 "pair contributes one held-out row, not one per direction. Directional "
+                 "interest legitimately contributes two rows because the two directions "
+                 "have different labels.")
+    lines.append("")
     if comp.get("best_model"):
         lines.append(f"Primary metric **{comp['primary_metric']}**: best "
                      f"`{comp['best_model']}` = {_f(comp['best_value'])}; "
@@ -192,6 +201,12 @@ def build_report(results: dict, sweep: dict | None = None) -> str:
                  "means: of pairs scored p, about p were positive in this sample. "
                  "With few positives the bins are noisy.")
     lines.append("")
+    lines.append("The interpretable score additionally carries a **weight-sensitivity "
+                 "band**: the same pair rescored under ±25% log-normal perturbation of the "
+                 "pre-registered weights (200 draws, deterministic per pair). It shows how "
+                 "much the number depends on the weight choice. It is not a confidence "
+                 "interval and says nothing about sampling error.")
+    lines.append("")
     lines.append("## 8. Temporal protocol (known people, later observations)")
     lines.append("")
     rows = []
@@ -224,6 +239,9 @@ def build_report(results: dict, sweep: dict | None = None) -> str:
             rows.append([f"{case['pair'][0]} ↔ {case['pair'][1]}",
                          case["observed_mutual"], _f(case["structured_score"], 1),
                          _f(case["coverage"], 2), pos, con])
+        lines.append("Scored by `structured` so each case can be explained feature by "
+                     "feature; the run's best learned model may be a different one.")
+        lines.append("")
         lines.append(_table(rows, ["pair", "observed mutual", "score", "coverage",
                                    "top positive", "top conflict"]))
     else:

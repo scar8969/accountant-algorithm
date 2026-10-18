@@ -108,6 +108,9 @@
         This is one seed: see the seed-stability block below before treating the ranking
         as real. Intervals overlap, so the ordering is suggestive at best.
       </div>
+      {% if view.power_note %}
+        <div class="warn" style="margin-top:14px">{{ view.power_note.statement }}</div>
+      {% endif %}
     </section>
     <section>
       <h2>Calibration — {{ view.calibration_name or 'n/a' }}</h2>
@@ -240,7 +243,10 @@
   </div>
 
   <section style="margin-top:22px">
-    <h2>Failure cases — high-score misses and low-score hits</h2>
+    <h2>Failure cases — structured-score misses</h2>
+    <p class="muted" style="font-size:12px;margin-top:0">
+      Scored by the interpretable baseline (so every case can be explained feature by
+      feature), not by the run's best learned model.</p>
     {% if view.failure_cases %}
       <table>
         <thead><tr><th>pair</th><th>observed mutual</th><th>structured score</th>

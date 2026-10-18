@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from ..db.models import (ConsentRecord, Feedback, PairOutcome, Participant,
@@ -120,6 +120,26 @@ def export(session: Session, participant_id: str) -> dict:
         select(Feedback).where(Feedback.participant_id == participant_id)
     ).scalars())
 
+    profile_ids = [p.id for p in profiles]
+    outcomes = []
+    if profile_ids:
+        rows = session.execute(
+            select(PairOutcome).where(or_(PairOutcome.profile_a.in_(profile_ids),
+                                          PairOutcome.profile_b.in_(profile_ids)))
+        ).scalars().all()
+        own = set(profile_ids)
+        for row in rows:
+            side_is_a = row.profile_a in own
+            outcomes.append({
+                "other_profile_id": row.profile_b if side_is_a else row.profile_a,
+                "interest": row.interest_a if side_is_a else row.interest_b,
+                "conversation_quality": (row.conversation_quality_a if side_is_a
+                                         else row.conversation_quality_b),
+                "continued_interest": (row.continued_interest_a if side_is_a
+                                       else row.continued_interest_b),
+                "recorded_at": row.recorded_at.isoformat(),
+            })
+
     return {
         "participant": {"id": participant.id, "public_code": participant.public_code,
                         "status": participant.status, "source": participant.source,
@@ -140,5 +160,7 @@ def export(session: Session, participant_id: str) -> dict:
             {"feedback_type": f.feedback_type, "rating": f.rating, "payload": f.payload,
              "created_at": f.created_at.isoformat()} for f in feedback
         ],
-        "note": "Export contains only this participant's own data.",
+        "pair_outcomes": outcomes,
+        "note": ("Export contains only this participant's own data. Pair outcomes show "
+                 "this participant's side only, never the other person's answers."),
     }

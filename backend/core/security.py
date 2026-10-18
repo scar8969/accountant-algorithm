@@ -66,17 +66,3 @@ def authorise_participant(session: Session, participant_id: str,
         raise HTTPException(status_code=403, detail="token does not match participant")
     return participant
 
-
-def require_owner_or_research(session: Session, participant_id: str,
-                              token: str | None, api_key: str | None) -> str:
-    """Return 'owner' or 'research'."""
-    if api_key:
-        try:
-            require_research_key(api_key)
-            return "research"
-        except HTTPException:
-            pass
-    participant = participant_from_token(session, token)
-    if participant.id != participant_id:
-        raise HTTPException(status_code=403, detail="not authorised for this participant")
-    return "owner"

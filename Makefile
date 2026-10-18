@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: install test benchmark sweep report serve seed demo clean
+.PHONY: install test benchmark sweep report serve seed migrate db-reset clean
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -16,6 +16,12 @@ sweep:
 
 report:
 	$(PY) scripts/make_report.py
+
+migrate:
+	$(PY) -m alembic upgrade head
+
+db-reset:
+	rm -f data/accountant.db && $(PY) -m alembic upgrade head
 
 serve:
 	$(PY) -m uvicorn backend.api.main:app --host 127.0.0.1 --port 8775

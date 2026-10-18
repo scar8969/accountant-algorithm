@@ -1,6 +1,6 @@
 # h1_structured_vs_baselines — experiment report
 
-Generated 2026-10-18T12:03:25+00:00 from `results/results.json`.
+Generated 2026-10-18T12:47:54+00:00 from `results/results.json`.
 
 | field | value |
 |---|---|
@@ -29,7 +29,7 @@ Reported interest is a self-report proxy, not attraction itself. Scores are on a
 | interaction-quality observations | 45 |
 | unknown interest directions | 1168 |
 | test positives (directional) | 83 |
-| test positives (mutual) | 16 |
+| test positives (mutual) | 8 |
 
 Unshown or unanswered directions are recorded as **unknown**, never as negative labels.
 
@@ -44,15 +44,19 @@ Unshown or unanswered directions are recorded as **unknown**, never as negative 
 
 | model | PR-AUC | 95% CI | ROC-AUC | log loss | ECE | NDCG@5 |
 |---|---|---|---|---|---|---|
-| random | 0.262 | [0.156, 0.487] | 0.501 | – | – | 0.345 |
-| structured | 0.293 | [0.184, 0.502] | 0.507 | – | – | 0.371 |
-| text | 0.229 | [0.141, 0.390] | 0.454 | – | – | 0.338 |
-| structured_text | 0.306 | [0.189, 0.519] | 0.538 | – | – | 0.385 |
-| mutual_independence | 0.295 | [0.191, 0.477] | 0.601 | 0.542 | 0.129 | 0.386 |
-| mutual_logistic | 0.375 | [0.206, 0.589] | 0.562 | 0.579 | 0.086 | 0.364 |
-| mutual_gbm | 0.242 | [0.148, 0.455] | 0.421 | 0.783 | 0.202 | 0.314 |
+| random | 0.186 | [0.114, 0.361] | 0.312 | – | – | 0.345 |
+| structured | 0.293 | [0.144, 0.554] | 0.507 | – | – | 0.371 |
+| text | 0.229 | [0.131, 0.462] | 0.454 | – | – | 0.338 |
+| structured_text | 0.306 | [0.142, 0.599] | 0.538 | – | – | 0.385 |
+| mutual_independence | 0.394 | [0.165, 0.776] | 0.562 | 0.566 | 0.082 | 0.362 |
+| mutual_logistic | 0.483 | [0.172, 0.826] | 0.587 | 0.563 | 0.146 | 0.346 |
+| mutual_gbm | 0.325 | [0.139, 0.636] | 0.452 | 0.713 | 0.193 | 0.358 |
 
-Primary metric **pr_auc**: best `mutual_logistic` = 0.375; Δ vs random +0.113; Δ vs structured +0.081.
+> With 8 positive mutual outcomes in the held-out split, the 95% interval for the best model (mutual_logistic) spans 0.65 PR-AUC. Differences smaller than that width are indistinguishable in this sample.
+
+Mutual interest and interaction quality are *pair-level* outcomes: each pair contributes one held-out row, not one per direction. Directional interest legitimately contributes two rows because the two directions have different labels.
+
+Primary metric **pr_auc**: best `mutual_logistic` = 0.483; Δ vs random +0.297; Δ vs structured +0.189.
 
 Intervals overlap heavily at this sample size. Ordering is suggestive, not established.
 
@@ -64,34 +68,34 @@ The same configuration was rerun under 5 seeds (20261018, 20261019, 20261020, 20
 
 | model | mean | sd | min | max | seeds won |
 |---|---|---|---|---|---|
-| mutual_gbm | 0.326 | 0.123 | 0.196 | 0.513 | 1 |
-| mutual_logistic | 0.290 | 0.149 | 0.051 | 0.447 | 2 |
+| mutual_gbm | 0.367 | 0.141 | 0.143 | 0.487 | 1 |
+| mutual_independence | 0.356 | 0.159 | 0.125 | 0.566 | 1 |
+| mutual_logistic | 0.350 | 0.177 | 0.077 | 0.526 | 1 |
 | structured_text | 0.290 | 0.174 | 0.050 | 0.515 | 1 |
 | structured | 0.288 | 0.173 | 0.048 | 0.503 | 0 |
 | text | 0.256 | 0.045 | 0.200 | 0.320 | 1 |
-| mutual_independence | 0.252 | 0.084 | 0.111 | 0.328 | 0 |
-| random | 0.200 | 0.083 | 0.062 | 0.265 | 0 |
+| random | 0.174 | 0.078 | 0.048 | 0.241 | 0 |
 
 **directional PR-AUC across seeds**
 
 | model | mean | sd | min | max | seeds won |
 |---|---|---|---|---|---|
-| structured_text | 0.448 | 0.066 | 0.334 | 0.492 | 3 |
-| structured | 0.447 | 0.068 | 0.329 | 0.488 | 0 |
+| structured_text | 0.448 | 0.066 | 0.334 | 0.488 | 2 |
+| structured | 0.448 | 0.069 | 0.330 | 0.490 | 1 |
 | directional_logistic | 0.439 | 0.092 | 0.277 | 0.500 | 2 |
 | text | 0.416 | 0.084 | 0.282 | 0.485 | 0 |
 | random | 0.392 | 0.067 | 0.322 | 0.493 | 0 |
 
-**The single-seed winner changed across seeds (mutual_gbm, mutual_logistic, structured_text, text).** Differences between models are smaller than seed-to-seed variance, so this sample cannot rank them. Increasing participants is the only fix; more synthetic pairs would not be evidence either.
+**The single-seed winner changed across seeds (mutual_gbm, mutual_independence, mutual_logistic, structured_text, text).** Differences between models are smaller than seed-to-seed variance, so this sample cannot rank them. Increasing participants is the only fix; more synthetic pairs would not be evidence either.
 
 ## 5. Directional interest (A → B)
 
 | model | PR-AUC | 95% CI | ROC-AUC | NDCG@5 | coverage |
 |---|---|---|---|---|---|
 | random | 0.411 | [0.331, 0.527] | 0.487 | 0.604 | 1.000 |
-| structured | 0.485 | [0.402, 0.588] | 0.525 | 0.624 | 0.885 |
+| structured | 0.490 | [0.404, 0.594] | 0.528 | 0.630 | 0.885 |
 | text | 0.485 | [0.419, 0.589] | 0.592 | 0.588 | 0.696 |
-| structured_text | 0.477 | [0.396, 0.583] | 0.522 | 0.612 | 0.885 |
+| structured_text | 0.482 | [0.398, 0.588] | 0.525 | 0.618 | 0.885 |
 | directional_logistic | 0.498 | [0.422, 0.603] | 0.575 | 0.659 | 1.000 |
 
 ## 6. Ablation: does text add anything? (H2)
@@ -106,30 +110,34 @@ The embedding here is a deterministic lexical hashing encoder, not a semantic mo
 
 Calibration blocks are reported per probabilistic model in `results.json` (`metrics.calibration.bins`). A calibrated probability means: of pairs scored p, about p were positive in this sample. With few positives the bins are noisy.
 
+The interpretable score additionally carries a **weight-sensitivity band**: the same pair rescored under ±25% log-normal perturbation of the pre-registered weights (200 draws, deterministic per pair). It shows how much the number depends on the weight choice. It is not a confidence interval and says nothing about sampling error.
+
 ## 8. Temporal protocol (known people, later observations)
 
 | task | model | PR-AUC | ROC-AUC |
 |---|---|---|---|
 | directional | random | 0.383 | 0.476 |
-| directional | structured | 0.408 | 0.559 |
+| directional | structured | 0.409 | 0.560 |
 | directional | text | 0.397 | 0.539 |
 | directional | directional_logistic | 0.441 | 0.597 |
-| mutual | random | 0.225 | 0.435 |
+| mutual | random | 0.195 | 0.368 |
 | mutual | structured | 0.233 | 0.466 |
 | mutual | text | 0.262 | 0.539 |
-| mutual | mutual_independence | 0.310 | 0.613 |
-| mutual | mutual_logistic | 0.301 | 0.636 |
+| mutual | mutual_independence | 0.276 | 0.588 |
+| mutual | mutual_logistic | 0.321 | 0.649 |
 
 ## 9. Interaction quality (Task C)
 
 | model | MAE | RMSE | n |
 |---|---|---|---|
-| interaction_mean | 0.596 | 0.709 | 14 |
-| interaction_ridge | 0.621 | 0.685 | 14 |
+| interaction_mean | 0.727 | 0.776 | 7 |
+| interaction_ridge | 0.727 | 0.776 | 7 |
 
 Quality labels exist only where both sides consented and both reported interest, so this comparison is underpowered in the synthetic run.
 
 ## 10. Failure cases
+
+Scored by `structured` so each case can be explained feature by feature; the run's best learned model may be a different one.
 
 | pair | observed mutual | score | coverage | top positive | top conflict |
 |---|---|---|---|---|---|

@@ -19,6 +19,8 @@ services:
       ACCOUNTANT_DB_URL: postgresql+psycopg://accountant:accountant@db:5432/accountant
       ACCOUNTANT_ENV: production
       ACCOUNTANT_API_KEY: ${ACCOUNTANT_API_KEY:?set ACCOUNTANT_API_KEY in .env}
+      ACCOUNTANT_RL_PARTICIPANTS: "60/60"
+      ACCOUNTANT_RL_SCORE: "240/60"
     ports:
       - "8000:8000"
     depends_on:

@@ -63,6 +63,23 @@ def _fit_matrix(rows: list[dict], task: str, embed=None):
     return X
 
 
+def _unique_pairs(rows: list[dict]) -> list[dict]:
+    """One row per unordered pair, keeping the first orientation.
+
+    Pair-level labels (mutual interest, conversation quality) must not be counted
+    twice just because both directions of a pair are present in the training set.
+    """
+    seen: set[frozenset] = set()
+    out: list[dict] = []
+    for row in rows:
+        key = frozenset((row["a"].get("participant_id"), row["b"].get("participant_id")))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
+
+
 class _SklearnClassifier(TaskModel):
     outputs_probability = True
     uses_labels = True
@@ -161,7 +178,7 @@ class MutualLogistic(_SklearnClassifier):
     def fit(self, rows: list[dict], task: str = "mutual") -> "MutualLogistic":
         directional_rows = [r for r in rows if r.get("interest_a") is not None]
         self.inner.fit(directional_rows, "directional")
-        labelled = [r for r in rows if r.get("mutual") is not None]
+        labelled = _unique_pairs([r for r in rows if r.get("mutual") is not None])
         self.n_train = len(labelled)
         y = self._labels(labelled)
         if len(labelled) == 0 or y.min() == y.max():
@@ -263,7 +280,7 @@ class InteractionRidge(TaskModel):
         self.feature_names = list(BASE_FEATURES)
 
     def fit(self, rows: list[dict], task: str = "interaction") -> "InteractionRidge":
-        rows = [r for r in rows if r.get("quality_a") is not None]
+        rows = _unique_pairs([r for r in rows if r.get("quality_a") is not None])
         y = np.array([float(r["quality_a"]) for r in rows])
         self.mean = float(y.mean()) if len(y) else None
         if len(rows) >= 20:

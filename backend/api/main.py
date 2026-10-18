@@ -9,7 +9,10 @@ independently, so a richer frontend can be added later without touching it.
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
+import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
@@ -26,6 +29,7 @@ from .routes import router
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+logger = logging.getLogger("accountant.api")
 
 
 def _results_path() -> Path:
@@ -103,7 +107,10 @@ def build_view(results: dict) -> dict:
     protocol = results["protocol"]
     mutual = results.get("results", {}).get("mutual", {})
     directional = results.get("results", {}).get("directional", {})
-    comparison = results.get("comparison", {})
+    comparison = results.get("comparison", {}) or {}
+    for task in ("directional", "mutual", "interaction"):
+        comparison.setdefault(task, {})
+    sweep = _load_sweep()
 
     best_mutual = comparison.get("mutual", {}).get("best_model")
     best_directional = comparison.get("directional", {}).get("best_model")
@@ -136,9 +143,10 @@ def build_view(results: dict) -> dict:
                      "leakage": temporal.get("leakage", {}),
                      "train_frac": temporal.get("train_frac")},
         "interaction": results.get("results", {}).get("interaction", {}),
-        "sweep": _load_sweep(),
+        "power_note": results.get("power_note"),
+        "sweep": sweep,
         "sweep_winners": sorted({row.get("best_mutual")
-                                 for row in (_load_sweep() or {}).get("per_seed", [])
+                                 for row in (sweep or {}).get("per_seed", [])
                                  if row.get("best_mutual")}),
         "generated": exp.get("created_at", ""),
         "results_path": str(_results_path()),
@@ -159,6 +167,23 @@ def create_app() -> FastAPI:
     init_db()
     app = FastAPI(title="Accountant Algorithm — research platform", version="0.1.0")
     app.include_router(router, prefix="/api/v1")
+
+    @app.middleware("http")
+    async def request_context(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception("unhandled error path=%s request_id=%s",
+                             request.url.path, request_id)
+            raise
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        response.headers["X-Request-ID"] = request_id
+        if request.url.path.startswith("/api"):
+            logger.info("%s %s -> %s in %.1fms id=%s", request.method,
+                        request.url.path, response.status_code, elapsed_ms, request_id)
+        return response
 
     @app.get("/", response_class=HTMLResponse)
     def dashboard(request: Request):
