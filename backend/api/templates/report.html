@@ -138,29 +138,32 @@
   <section class="panel" id="models">
     <div class="panel-head"><span class="num">02</span><h2>Directional interest (A → B)</h2>
       <span class="hint">{{ view.dataset.n_directional_observations }} directional observations</span></div>
-    <div class="split">
-      <div class="chart">
-        {{ view.directional_chart|safe }}
-        <p class="caption">Same participants, both directions. The text-only baseline is a
-          lexical hashing encoder, not a semantic model.</p>
-      </div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>model</th><th>PR-AUC</th><th>ROC-AUC</th><th>NDCG@5</th>
-            <th>coverage</th></tr></thead>
-          <tbody>
-          {% for row in view.directional_rows %}
-            <tr class="{% if row.highlight %}best{% endif %}">
-              <td>{{ row.model }}</td>
-              <td>{{ f(row.pr_auc) }}</td>
-              <td>{{ f(row.roc_auc) }}</td>
-              <td>{{ f(row.ndcg) }}</td>
-              <td>{{ f(row.coverage, 2) }}</td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
+    <div class="chart">
+      {{ view.directional_chart|safe }}
+      <p class="caption">Same participants, both directions. The text-only baseline is a
+        lexical hashing encoder, not a semantic model; the structured baseline is the
+        interpretable one.</p>
+    </div>
+    <div class="table-wrap mt">
+      <table class="data">
+        <thead><tr><th>model</th><th>PR-AUC</th><th>95% CI</th><th>ROC-AUC</th>
+          <th>log loss</th><th>NDCG@5</th><th>Recall@5</th><th>coverage</th><th>n</th></tr></thead>
+        <tbody>
+        {% for row in view.directional_rows %}
+          <tr class="{% if row.highlight %}best{% endif %}">
+            <td>{{ row.model }}</td>
+            <td>{{ f(row.pr_auc) }}</td>
+            <td class="dim">{{ row.ci }}</td>
+            <td>{{ f(row.roc_auc) }}</td>
+            <td>{{ f(row.log_loss) }}</td>
+            <td>{{ f(row.ndcg) }}</td>
+            <td>{{ f(row.recall) }}</td>
+            <td>{{ f(row.coverage, 2) }}</td>
+            <td class="dim">{{ row.n if row.n is not none else '–' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 

@@ -138,14 +138,40 @@ calibration, seed stability and feature-level failure cases. No JS build step, n
 
 ![Experiment dashboard](docs/dashboard.png)
 
+Primary result panel — PR-AUC per model with 95% cluster-bootstrap intervals, next to the
+interpretation guardrails:
+
+![Primary result](docs/result.png)
+
+Seed stability — the same configuration under five seeds, with each seed's winner listed:
+
+![Seed stability](docs/stability.png)
+
 The compatibility explorer decomposes a single pair into weighted feature contributions,
-hard constraints, missing answers and a weight-sensitivity band.
+hard constraints, missing answers and a weight-sensitivity band:
 
 ![Compatibility explorer](docs/explorer.png)
 
-Full-page capture: [`docs/dashboard-full.png`](docs/dashboard-full.png).
-
 ---
+
+## Facts
+
+Measured on this repository, not estimated:
+
+| quantity | value |
+|---|---|
+| Python | 45 files · 5,875 lines (4,438 application, 1,136 tests, rest scripts) |
+| tests | 90 passing in ~45 s (unit, integration, leakage, render) |
+| registered models | 11 across 3 prediction tasks |
+| database tables | 9 (participants, consent, profiles, experiments, model versions, pair outcomes, runs, predictions, feedback) |
+| dashboard | 3 templates + 353 lines of CSS, 0 JS, 0 CDN requests |
+| 100-profile benchmark | 1,484 pairs, 157 test pairs, 50 s end to end |
+| 300-profile benchmark | 7,909 pairs, 694 test pairs, 124 s end to end |
+| mutual-interest rows | 34 (100-profile run) · 88 (300-profile run) — one per pair |
+| interval width, mutual PR-AUC | 0.65 at 100 profiles → 0.29 at 300 profiles |
+| seed sweep | 5 seeds → 5 different winning models |
+| directional PR-AUC, structured | 0.484 vs 0.389 random (300-profile run) |
+| leakage | 0 shared participants, 0 shared pairs, asserted inside every run |
 
 ## Architecture
 
