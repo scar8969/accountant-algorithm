@@ -1,5 +1,6 @@
 # The Accountant Algorithm
 
+[![ci](https://github.com/scar8969/accountant-algorithm/actions/workflows/ci.yml/badge.svg)](https://github.com/scar8969/accountant-algorithm/actions/workflows/ci.yml)
 ![tests](https://img.shields.io/badge/tests-90%20passing-2f6f4f?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.11%2B-31506f?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-31506f?style=flat-square)
