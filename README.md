@@ -174,6 +174,11 @@ Measured on this repository, not estimated:
 | directional PR-AUC, structured | 0.484 vs 0.389 random (300-profile run) |
 | leakage | 0 shared participants, 0 shared pairs, asserted inside every run |
 
+A caution the pipeline makes easy to see: at 40 profiles the **random baseline wins** the
+primary metric (PR-AUC 0.403). Small synthetic runs are useful for exercising the code and
+useless for ranking models — which is why the sweep and the interval widths are printed
+next to every headline number.
+
 ## Architecture
 
 Modular monolith, one process, no queue, no vector database, no microservices.
