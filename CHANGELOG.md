@@ -80,6 +80,13 @@ set of missing guards. Everything below is covered by a test.
   and the no-artifact setup page.
 * **GitHub Actions CI**: tests, migrations on a fresh database, benchmark smoke run.
 
+### Docs
+
+* README restructured for first-time readers: a one-table summary up top, a three-command
+  quickstart, the interpretable 300-profile result before the noisy 100-profile one, a
+  metrics glossary, and reference material (schema, models, protocol, simulation,
+  deviations, repository map) folded into collapsible sections.
+
 ### Changed numbers
 
 The mutual-interest metrics in the README/report were regenerated after the
